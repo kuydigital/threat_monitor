@@ -81,14 +81,18 @@ Headlines belong to their publishers and are shown with their source.
 
 ## Publishing a new release (maintainers)
 
+On GitHub: **Releases → Draft a new release**, create a tag such as `v1.0.0`,
+and click **Publish release**. Or from a terminal:
+
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-GitHub Actions builds the screensaver on Windows, tests it, and publishes
-`ThreatMonitor-Windows-v1.0.0.zip` on the Releases page
-(see `.github/workflows/release.yml`).
+Either way, GitHub Actions builds the screensaver on Windows, tests it, and
+attaches `ThreatMonitor-Windows-v1.0.0.zip` to the release a few minutes later
+(see `.github/workflows/release.yml`). *Actions → Build Windows screensaver →
+Run workflow* runs the same build and test without publishing anything.
 
 ## License
 

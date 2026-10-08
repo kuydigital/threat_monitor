@@ -58,8 +58,19 @@ jobs:
           "ZIP=$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Get-Item "$name.zip" | Select-Object Name, Length
 
+      # Works both ways: a tag pushed with git (creates the release), or a
+      # release drafted on github.com (already exists - the zip is added to it).
       - name: Publish release
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" "${{ env.ZIP }}" --title "Threat Monitor ${{ github.ref_name }}" --generate-notes
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "Threat Monitor $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "could not create release $tag" }
+          }
+          gh release upload $tag "${{ env.ZIP }}" --clobber
+          if ($LASTEXITCODE -ne 0) { throw "could not upload ${{ env.ZIP }}" }
