@@ -1,0 +1,65 @@
+# Builds the Windows screensaver on GitHub's servers and publishes it.
+#
+#   Publish a release:  git tag v1.0.0  then  git push origin v1.0.0
+#   -> a release named v1.0.0 appears with ThreatMonitor-Windows-v1.0.0.zip
+#      (people install it with install.bat - no Python needed).
+#
+#   "Run workflow" on the Actions tab builds and tests without publishing.
+
+name: Build Windows screensaver
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write          # needed to create the release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # PyInstaller 7 will refuse to run as administrator, and GitHub's
+      # Windows machines always do - so stay on 6.x.
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade --only-binary=:all: pygame-ce requests "pyinstaller>=6,<7"
+
+      - name: Build
+        run: python -m PyInstaller --noconfirm --clean --windowed --name ThreatMonitor threat_screensaver.py
+
+      # Tested as .exe: Windows starts .scr files with its own arguments.
+      - name: Self-test the packaged screensaver
+        run: |
+          $p = Start-Process -FilePath dist/ThreatMonitor/ThreatMonitor.exe -ArgumentList "--selftest" -Wait -PassThru
+          if ($p.ExitCode -ne 0) {
+            if (Test-Path selftest.log) { Get-Content selftest.log }
+            throw "Self-test failed (exit code $($p.ExitCode))"
+          }
+          "Self-test passed"
+
+      - name: Rename to .scr
+        run: Rename-Item dist/ThreatMonitor/ThreatMonitor.exe ThreatMonitor.scr
+
+      - name: Package
+        run: |
+          $name = if ($env:GITHUB_REF_TYPE -eq "tag") { "ThreatMonitor-Windows-$env:GITHUB_REF_NAME" } else { "ThreatMonitor-Windows-test" }
+          New-Item -ItemType Directory -Force "pkg/$name" | Out-Null
+          Copy-Item -Recurse dist/ThreatMonitor "pkg/$name/ThreatMonitor"
+          Copy-Item install.bat, register_screensaver.bat, uninstall_screensaver.bat, INSTALL.txt "pkg/$name/"
+          Compress-Archive -Path "pkg/$name" -DestinationPath "$name.zip"
+          "ZIP=$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Get-Item "$name.zip" | Select-Object Name, Length
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" "${{ env.ZIP }}" --title "Threat Monitor ${{ github.ref_name }}" --generate-notes

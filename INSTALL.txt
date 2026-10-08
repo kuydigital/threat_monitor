@@ -1,0 +1,30 @@
+THREAT MONITOR SCREENSAVER - Windows 10/11
+==========================================
+Created and maintained by Oliver Kuy
+https://github.com/kuydigital/threat_monitor
+
+INSTALL (no Python, no admin rights needed)
+1. Unzip this download anywhere.
+2. Double-click install.bat.
+   If Windows shows "Windows protected your PC", click More info > Run anyway
+   (it appears for programs downloaded from the internet that aren't
+   signed by a company).
+3. Screen Saver Settings opens with "ThreatMonitor" selected.
+   Pick the wait time and click OK.
+
+Try it any time with the Preview button in Screen Saver Settings.
+
+WHAT IT DOES
+- Shows a Global Threat Index plus WAR, DIS (disasters), CYB (cyber) and
+  BIO scores and the latest headlines, on every monitor.
+- Updates from public news feeds every 15 minutes while it runs, and starts
+  instantly with the last saved values.
+- Any key, click or mouse movement closes it.
+
+FILES
+- Program:     %LOCALAPPDATA%\Programs\ThreatMonitor\ThreatMonitor.scr
+- Saved data:  %APPDATA%\ThreatMonitor  (calibration, last values,
+               screensaver.log - it says which source failed, if any)
+
+ThreatMonitor not in the Screen Saver list? Double-click
+register_screensaver.bat.  To remove everything: uninstall_screensaver.bat.

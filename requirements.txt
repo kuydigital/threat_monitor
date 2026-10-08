@@ -1,0 +1,4 @@
+# For running threat_monitor.py with pip. (Raspberry Pi OS users can instead
+# run: sudo apt install python3-pygame python3-requests)
+pygame-ce>=2.4
+requests>=2.28

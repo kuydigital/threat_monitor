@@ -1,0 +1,6 @@
+# Windows batch files must keep CRLF line endings, or labels and goto can fail.
+*.bat text eol=crlf
+*.py  text eol=lf
+*.md  text eol=lf
+*.txt text eol=crlf
+*.png binary

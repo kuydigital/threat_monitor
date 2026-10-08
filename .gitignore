@@ -1,0 +1,14 @@
+# build output
+.build-env/
+build/
+dist/
+pkg/
+*.spec
+__pycache__/
+
+# created at run time next to threat_monitor.py
+threat_calibration.json
+threat_state.json
+threat_monitor.log
+threat_monitor.log.old
+selftest.log
