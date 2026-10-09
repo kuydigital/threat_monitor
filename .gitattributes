@@ -4,3 +4,10 @@
 *.md  text eol=lf
 *.txt text eol=crlf
 *.png binary
+# macOS files keep Unix line endings.
+*.sh    text eol=lf
+*.swift text eol=lf
+*.m     text eol=lf
+*.plist text eol=lf
+*.yml   text eol=lf
+mac/*.txt text eol=lf

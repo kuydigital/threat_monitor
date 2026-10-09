@@ -12,3 +12,7 @@ threat_state.json
 threat_monitor.log
 threat_monitor.log.old
 selftest.log
+
+# macOS screensaver build output
+mac/build/
+ci-out/

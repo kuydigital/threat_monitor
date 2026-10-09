@@ -1,12 +1,16 @@
-# Builds the Windows screensaver on GitHub's servers and publishes it.
+# Builds the Windows and macOS screensavers on GitHub's servers, tests them,
+# and publishes them on the Releases page.
 #
-#   Publish a release:  git tag v1.0.0  then  git push origin v1.0.0
-#   -> a release named v1.0.0 appears with ThreatMonitor-Windows-v1.0.0.zip
-#      (people install it with install.bat - no Python needed).
+#   Publish a release:  git tag v1.1.0  then  git push origin v1.1.0
+#   (or draft a release on github.com with a new tag). The release gets:
+#     "Windows screensaver (ZIP)"  ThreatMonitor-Windows.zip - run install.bat (no Python needed)
+#     "macOS screensaver (ZIP)"    ThreatMonitor-macOS.zip   - double-click Threat Monitor.saver
 #
-#   "Run workflow" on the Actions tab builds and tests without publishing.
+#   "Run workflow" on the Actions tab builds and tests both without
+#   publishing; the macOS test report (logs and screenshots) is pushed to
+#   the ci-report branch.
 
-name: Build Windows screensaver
+name: Build screensavers
 
 on:
   push:
@@ -17,7 +21,8 @@ permissions:
   contents: write          # needed to create the release
 
 jobs:
-  build:
+  windows:
+    name: Windows screensaver
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -50,12 +55,11 @@ jobs:
 
       - name: Package
         run: |
-          $name = if ($env:GITHUB_REF_TYPE -eq "tag") { "ThreatMonitor-Windows-$env:GITHUB_REF_NAME" } else { "ThreatMonitor-Windows-test" }
+          $name = "ThreatMonitor-Windows"
           New-Item -ItemType Directory -Force "pkg/$name" | Out-Null
           Copy-Item -Recurse dist/ThreatMonitor "pkg/$name/ThreatMonitor"
-          Copy-Item install.bat, register_screensaver.bat, uninstall_screensaver.bat, INSTALL.txt "pkg/$name/"
+          Copy-Item install.bat, register_screensaver.bat, uninstall_screensaver.bat, INSTALL.txt, LICENSE "pkg/$name/"
           Compress-Archive -Path "pkg/$name" -DestinationPath "$name.zip"
-          "ZIP=$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Get-Item "$name.zip" | Select-Object Name, Length
 
       # Works both ways: a tag pushed with git (creates the release), or a
@@ -70,7 +74,89 @@ jobs:
           gh release view $tag *> $null
           if ($LASTEXITCODE -ne 0) {
             gh release create $tag --title "Threat Monitor $tag" --generate-notes
-            if ($LASTEXITCODE -ne 0) { throw "could not create release $tag" }
+            if ($LASTEXITCODE -ne 0) {
+              gh release view $tag *> $null      # the macOS job may have just created it
+              if ($LASTEXITCODE -ne 0) { throw "could not create release $tag" }
+            }
           }
-          gh release upload $tag "${{ env.ZIP }}" --clobber
-          if ($LASTEXITCODE -ne 0) { throw "could not upload ${{ env.ZIP }}" }
+          gh release upload $tag "ThreatMonitor-Windows.zip#Windows screensaver (ZIP)" --clobber
+          if ($LASTEXITCODE -ne 0) { throw "could not upload ThreatMonitor-Windows.zip" }
+
+  macos:
+    name: macOS screensaver
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Python packages (for the comparison with the Python version)
+        run: python -m pip install requests
+
+      - name: Build
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then export VERSION="${GITHUB_REF_NAME#v}"; fi
+          bash mac/build.sh 2>&1 | tee ci-out/build.log
+
+      # Downloads every source once and records the Python version's results
+      # on exactly those files; the Swift tests must give the same results.
+      - name: Record the Python version's results
+        run: |
+          set -o pipefail
+          python mac/Tests/make_golden.py ci-out/golden 2>&1 | tee ci-out/golden.log
+
+      - name: Test
+        run: |
+          set -o pipefail
+          bash mac/test.sh "$PWD/ci-out/golden" "$PWD/ci-out/screens" 2>&1 | tee ci-out/test.log
+
+      - name: Live source check, Python and Swift side by side
+        if: always()
+        continue-on-error: true
+        run: |
+          python threat_monitor.py --check > ci-out/check-python.txt 2>&1 || true
+          if [ -x mac/build/core-tests ]; then mac/build/core-tests --live > ci-out/check-swift.txt 2>&1 || true; fi
+
+      - name: Package
+        run: |
+          set -o pipefail
+          PKG="Threat Monitor for macOS"
+          rm -rf pkg && mkdir -p "pkg/$PKG"
+          ditto "mac/build/Threat Monitor.saver" "pkg/$PKG/Threat Monitor.saver"
+          cp mac/INSTALL-Mac.txt "pkg/$PKG/INSTALL.txt"
+          cp LICENSE "pkg/$PKG/LICENSE.txt"
+          (cd pkg && ditto -c -k --sequesterRsrc --keepParent "$PKG" ../ThreatMonitor-macOS.zip)
+          ls -l ThreatMonitor-macOS.zip
+          cp ThreatMonitor-macOS.zip ci-out/
+
+      - name: Send the test report to the ci-report branch (test runs only)
+        if: always() && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ci-out
+          cd ci-out
+          echo "Run ${{ github.run_id }} of ${{ github.sha }} on ${{ github.ref_name }}, $(date -u)" > README.txt
+          sw_vers >> README.txt || true
+          git init -q
+          git checkout -q -b ci-report
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Test report for run ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-report
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ github.ref_name }}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            # the Windows job may create it at the same moment
+            gh release create "$tag" --title "Threat Monitor $tag" --generate-notes || gh release view "$tag" >/dev/null
+          fi
+          gh release upload "$tag" "ThreatMonitor-macOS.zip#macOS screensaver (ZIP)" --clobber

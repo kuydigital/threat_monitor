@@ -1,13 +1,16 @@
-# SYSTEM THREAT MONITOR  v3.3
+# SYSTEM THREAT MONITOR  v3.4
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
-# Revised: Friday, October 9, 2026
+# Revised: Saturday, October 10, 2026
 #
 # Run:   python3 threat_monitor.py                    (fullscreen, live data)
 #        python3 threat_monitor.py --windowed 320x240 (in a window)
 #        python3 threat_monitor.py --demo             (sample data, no network)
 #        python3 threat_monitor.py --check            (test every news source)
 # Keys:  Esc/Q quit · Right/Space/tap next screen · Left previous · R sync now
+#        F switch between window and full screen
 # Windows screensaver: see threat_screensaver.py (imports this file).
+# macOS screensaver: a native Swift port in mac/ (same sources and scoring;
+#        mac/Tests checks it gives the same results as this file).
 # Works with pygame or pygame-ce (pip install pygame-ce on newer Python versions).
 #
 # How the numbers work (details in NOTES at the bottom):
@@ -1044,6 +1047,7 @@ LEVELS = [   # (upper bound, name, color)
 MONO_FONTS = "dejavusansmono,liberationmono,consolas,menlo,ubuntumono,couriernew,freemono"
 SANS_FONTS = "dejavusans,liberationsans,arial,helvetica,ubuntu,freesans"
 
+DEFAULT_WINDOW = (960, 720)   # window size when F switches from full screen to a window
 HEADLINE_MAX_LINES = 3
 HEADLINE_SIZES = (21, 16)      # largest / smallest headline font, in 320x240 units
 
@@ -1099,12 +1103,15 @@ class Display:
             pg.display.init()
             if size:
                 self.screen = pg.display.set_mode(size)
+                pg.mouse.set_visible(True)
             else:
                 info = pg.display.Info()
                 self.screen = pg.display.set_mode((info.current_w, info.current_h),
                                                   pg.FULLSCREEN | pg.NOFRAME)
                 pg.mouse.set_visible(False)
             pg.display.set_caption("Threat Monitor")
+        self.window_size = size if surface is None else None   # None = full screen
+        self.restore_size = None
         self.W, self.H = self.screen.get_size()
         self.u = min(self.W / 320.0, self.H / 240.0)
         self.oy = int((self.H - 240 * self.u) / 2)
@@ -1117,6 +1124,17 @@ class Display:
         self.switch_t = 0.0
         self.fade = pg.Surface((self.W, self.H))
         self.fade.fill(BG)
+
+    def toggled(self):
+        """A new Display switched between full screen and a window (F key)."""
+        if self.window_size:                        # window -> full screen
+            new = Display(self.pg, None)
+            new.restore_size = self.window_size
+        else:                                       # full screen -> window
+            self.pg.display.quit()                  # a fresh window: some systems keep
+            new = Display(self.pg, self.restore_size or DEFAULT_WINDOW)   # the full-screen size otherwise
+        new.switch_t = self.switch_t
+        return new
 
     # ---- primitives ------------------------------------------------------
     def s(self, v):
@@ -1496,6 +1514,8 @@ def run(disp, snapshot_dir=None, live=False):
                     rot.go(-1, now)
                 elif ev.key == pg.K_r:
                     wake_event.set()
+                elif ev.key == pg.K_f and disp.present:
+                    disp = disp.toggled()
             elif ev.type == pg.MOUSEBUTTONDOWN:     # touchscreens report taps as clicks
                 rot.go(1, now)
 
@@ -1518,7 +1538,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.3 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.4 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1559,13 +1579,54 @@ def run_check():
     print(f"\nDone in {time.monotonic() - t0:.1f} s. Log file: {os.path.join(DATA_DIR, 'threat_monitor.log')}")
 
 
+def run_selftest():
+    """--selftest: draw every screen with sample data, off-screen, and switch
+    a window to full screen and back. Exit code 0 = OK. Used by the GitHub
+    build; problems also go to selftest.log."""
+    try:
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
+        os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+        import pygame
+        disp = Display(pygame, (640, 480))
+        load_demo_state()
+        snap = snapshot()
+        now = time.time()
+        disp.step(snap, 10)
+        disp.draw_main(snap, now, 0.5)
+        for c in CATS:
+            disp.draw_headline(snap, c, 0, now, 0.5)
+        disp = disp.toggled()                       # full screen
+        disp.step(snap, 10)
+        disp.draw_main(snap, now, 0.5)
+        disp = disp.toggled()                       # back to the window
+        assert disp.screen.get_size() == (640, 480), disp.screen.get_size()
+        pygame.quit()
+        print("selftest OK")
+        return 0
+    except Exception:
+        err = traceback.format_exc()
+        try:
+            sys.stderr.write(err)
+        except Exception:
+            pass
+        try:
+            with open("selftest.log", "w", encoding="utf-8") as f:
+                f.write(err)
+        except OSError:
+            pass
+        return 1
+
+
 def main():
     ap = argparse.ArgumentParser(description="Threat Monitor by Oliver Kuy - global threat news dashboard")
     ap.add_argument("--windowed", metavar="WxH", help="run in a window, e.g. 320x240")
     ap.add_argument("--demo", action="store_true", help="sample data, no network")
     ap.add_argument("--snapshot", metavar="DIR", help="save a PNG of each screen and exit")
     ap.add_argument("--check", action="store_true", help="test every news source and explain the scores")
+    ap.add_argument("--selftest", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
+    if args.selftest:
+        sys.exit(run_selftest())
     if args.check:
         run_check()
         return
@@ -1582,7 +1643,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.3 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.4 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     if live:

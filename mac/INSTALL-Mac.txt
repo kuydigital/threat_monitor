@@ -1,0 +1,35 @@
+THREAT MONITOR - macOS screensaver
+Created and maintained by Oliver Kuy
+https://github.com/kuydigital/threat_monitor
+
+Shows the Global Threat Index and the latest war, disaster, cyber and bio
+alerts while your Mac is idle. News categories are measured against their
+own recent normal, so an ordinary day reads about 35 (GUARDED).
+Needs macOS 12 Monterey or later; runs on Apple silicon and Intel Macs.
+
+INSTALL
+1. Double-click "Threat Monitor.saver" and click Install
+   ("Install for this user only" is fine).
+2. If macOS says it can't verify "Threat Monitor.saver" (now or when you
+   first pick it), click Done. Then open System Settings > Privacy &
+   Security, scroll down, click "Open Anyway" next to Threat Monitor and
+   enter your password. Double-click "Threat Monitor.saver" again if it
+   wasn't installed yet. macOS asks this once for free apps that aren't
+   registered with Apple.
+3. In System Settings > Screen Saver, pick Threat Monitor.
+   (macOS 12: System Preferences > Desktop & Screen Saver.)
+
+Or install from Terminal, with no security prompts:
+  curl -fsSL https://raw.githubusercontent.com/kuydigital/threat_monitor/main/mac/install.sh | bash
+
+UPDATING
+Install the new version the same way. If the old one still shows, log out
+and back in (macOS keeps a screensaver loaded until then).
+
+REMOVING
+Control-click Threat Monitor in the Screen Saver settings and choose
+Delete, or delete "Threat Monitor.saver" from ~/Library/Screen Savers
+(Finder > Go > Go to Folder...).
+
+The screensaver keeps its saved values and a log (screensaver.log) in
+~/Library/Containers/com.apple.ScreenSaver.Engine.legacyScreenSaver/Data/Library/Application Support/ThreatMonitor
