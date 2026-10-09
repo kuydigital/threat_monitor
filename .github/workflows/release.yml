@@ -73,7 +73,8 @@ jobs:
           $tag = "${{ github.ref_name }}"
           gh release view $tag *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --title "Threat Monitor $tag" --generate-notes
+            $notes = ".github/release-notes/$tag.md"     # optional hand-written notes
+            if (Test-Path $notes) { gh release create $tag --title "Threat Monitor $tag" --notes-file $notes } else { gh release create $tag --title "Threat Monitor $tag" --generate-notes }
             if ($LASTEXITCODE -ne 0) {
               gh release view $tag *> $null      # the macOS job may have just created it
               if ($LASTEXITCODE -ne 0) { throw "could not create release $tag" }
@@ -155,8 +156,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${{ github.ref_name }}"
+          notes=".github/release-notes/$tag.md"           # optional hand-written notes
+          if [ -f "$notes" ]; then how=(--notes-file "$notes"); else how=(--generate-notes); fi
           if ! gh release view "$tag" >/dev/null 2>&1; then
             # the Windows job may create it at the same moment
-            gh release create "$tag" --title "Threat Monitor $tag" --generate-notes || gh release view "$tag" >/dev/null
+            gh release create "$tag" --title "Threat Monitor $tag" "${how[@]}" || gh release view "$tag" >/dev/null
           fi
           gh release upload "$tag" "ThreatMonitor-macOS.zip#macOS screensaver (ZIP)" --clobber

@@ -128,7 +128,9 @@ git push origin v1.1.0
 
 Either way, GitHub Actions builds both screensavers (Windows and macOS), tests
 them, and attaches **Windows screensaver (ZIP)** and **macOS screensaver (ZIP)**
-to the release a few minutes later (see `.github/workflows/release.yml`). The
+to the release a few minutes later (see `.github/workflows/release.yml`). For a
+tag pushed from a terminal, the release text comes from
+`.github/release-notes/<tag>.md` if that file exists. The
 download buttons above always point to the newest release. *Actions → Build
 screensavers → Run workflow* runs the same builds and tests without
 publishing anything.
