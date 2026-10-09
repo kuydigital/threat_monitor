@@ -185,6 +185,8 @@ CRAFTED_SEVERITY = [
     ("Bird flu H5N1 found in dairy cattle", ""), ("Measles cases rise", "new variant spreading"),
     ("Price war hits supermarkets", ""), ("Opioid epidemic deaths fall", ""),
     ("Man killed in a bus crash", ""), ("Hamas and Israel agree ceasefire", ""),
+    ("Two teens in custody after home invasion", ""), ("Invasion of privacy lawsuit filed", ""),
+    ("Russia's invasion of Ukraine enters new phase", ""),
 ]
 seen = set()
 g["severity"] = []

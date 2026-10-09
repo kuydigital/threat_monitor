@@ -168,7 +168,7 @@ enum Config {
         #"\bworld war (i|ii|one|two|1|2)\b"#,
         #"\boffensive (remarks?|comments?|language|jokes?|posts?|tweets?|content|messages?|chants?|coordinator|line|lineman)\b"#,
         #"\bfront ?-?line (workers?|staff|nurses?|doctors?|services?|health|care)\b"#,
-        #"\bshelling out\b"#,
+        #"\bshelling out\b"#, #"\bhome[- ]invasions?\b"#, #"\binvasion of privacy\b"#,
         // labour strikes, not military strikes
         #"\b(rail|train|tube|bus|teachers?|doctors?|nurses?|workers?|union|general|hunger|labou?r|national|postal|port|dock|airline|pilots?|staff) strikes?\b"#,
         #"\bon strike\b"#, #"\bstrikes? (action|ballot|vote|over (pay|wages|pensions))\b"#,

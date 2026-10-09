@@ -342,9 +342,12 @@ final class Renderer {
             if abs(d) >= 3 { triangle(r.minX - s(7), r.midY.rounded(), s(8), up: d > 0, d > 0 ? Palette.up : Palette.down) }
         }
 
-        let nr = text(gti.map { String($0) } ?? "--", .mono, 38, gti != nil ? lv.color : Palette.err, CGPoint(x: m - s(2), y: y(146)))
+        let numFont = font(.mono, 38)
+        let nr = text(gti.map { String($0) } ?? "--", numFont, gti != nil ? lv.color : Palette.err, CGPoint(x: m - s(2), y: y(146)))
         if gti != nil {
-            text("%", .mono, 16, lv.color, CGPoint(x: nr.maxX + s(2), y: nr.maxY - s(9)), .bottomLeft)
+            let pf = font(.mono, 16)
+            let baseline = nr.minY + numFont.ascender
+            text("%", pf, lv.color, CGPoint(x: nr.maxX + s(1), y: baseline - pf.ascender))
         }
 
         let badgeFont = font(.mono, 14)

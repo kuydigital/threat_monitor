@@ -135,7 +135,8 @@ for (i, a) in abbrev.enumerated() where i < Text.abbreviations.count {
     let mine = Text.abbreviations[i]
     expect("patterns", str(row.first) == mine.rx.pattern, "abbreviation \(i): \(q(mine.rx.pattern)) vs \(q(str(row.first)))")
     expect("patterns", (row.count > 1 ? str(row[1]) : nil) == mine.template, "abbreviation \(i) replacement")
-    expect("patterns", (row.count > 2 ? row[2] as? Bool : nil) == mine.rx.ci, "abbreviation \(i) case flag")
+    let myCI = mine.rx.ci || mine.rx.pattern.hasPrefix("(?i)")      // inline flag = whole pattern
+    expect("patterns", (row.count > 2 ? row[2] as? Bool : nil) == myCI, "abbreviation \(i) case flag")
 }
 
 let gf = obj(golden["feeds"])

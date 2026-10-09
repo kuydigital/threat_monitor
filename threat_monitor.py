@@ -173,7 +173,7 @@ CATEGORIES = {
             r"\bworld war (i|ii|one|two|1|2)\b",
             r"\boffensive (remarks?|comments?|language|jokes?|posts?|tweets?|content|messages?|chants?|coordinator|line|lineman)\b",
             r"\bfront ?-?line (workers?|staff|nurses?|doctors?|services?|health|care)\b",
-            r"\bshelling out\b",
+            r"\bshelling out\b", r"\bhome[- ]invasions?\b", r"\binvasion of privacy\b",
             # labour strikes, not military strikes
             r"\b(rail|train|tube|bus|teachers?|doctors?|nurses?|workers?|union|general|hunger|labou?r|national|"
             r"postal|port|dock|airline|pilots?|staff) strikes?\b",
