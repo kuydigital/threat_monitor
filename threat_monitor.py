@@ -1,13 +1,16 @@
-# SYSTEM THREAT MONITOR  v3.4
+# SYSTEM THREAT MONITOR  v3.5
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
-# Revised: Saturday, October 10, 2026
+# Revised: Sunday, October 11, 2026
 #
 # Run:   python3 threat_monitor.py                    (fullscreen, live data)
 #        python3 threat_monitor.py --windowed 320x240 (in a window)
 #        python3 threat_monitor.py --demo             (sample data, no network)
 #        python3 threat_monitor.py --check            (test every news source)
+#        python3 threat_monitor.py --no-dim           (stay bright at night)
 # Keys:  Esc/Q quit · Right/Space/tap next screen · Left previous · R sync now
 #        F switch between window and full screen
+# Night: the screen dims from 12 midnight to 6 AM (Pi's local time); see
+#        NIGHT_HOURS and NIGHT_BRIGHTNESS below. The screensavers never dim.
 # Windows screensaver: see threat_screensaver.py (imports this file).
 # macOS screensaver: a native Swift port in mac/ (same sources and scoring;
 #        mac/Tests checks it gives the same results as this file).
@@ -1055,6 +1058,11 @@ MAIN_SECS, CAT_SECS = 12, 8
 FPS = 15
 FADE_SECS = 0.25
 
+# Night dimming (this script only - the Windows and Mac screensavers never dim).
+NIGHT_HOURS = (0, 6)          # dim from 00:00 until 06:00 local time; None = never dim
+NIGHT_BRIGHTNESS = 0.3        # how bright the screen is at night (1.0 = normal)
+DIM_FADE_SECS = 3.0           # how long the change to and from night brightness takes
+
 
 def level_for(v):
     if v is None:
@@ -1063,6 +1071,19 @@ def level_for(v):
         if v < limit:
             return name, color
     return LEVELS[-1][1], LEVELS[-1][2]
+
+
+def is_night(t=None, hours=...):
+    """True during the night hours, in local time (t = time.time() value,
+    default now; hours default NIGHT_HOURS). Also handles ranges across
+    midnight, e.g. (22, 6)."""
+    if hours is ...:
+        hours = NIGHT_HOURS
+    if not hours:
+        return False
+    start, end = hours
+    h = time.localtime(t).tm_hour
+    return start <= h < end if start <= end else (h >= start or h < end)
 
 
 def mix(a, b, t):
@@ -1124,6 +1145,10 @@ class Display:
         self.switch_t = 0.0
         self.fade = pg.Surface((self.W, self.H))
         self.fade.fill(BG)
+        self.night_dim = False      # set by main(): only this script dims at night
+        self.dim = 0.0              # current darkening: 0 = normal, 1 - NIGHT_BRIGHTNESS = night
+        self.night = pg.Surface((self.W, self.H))
+        self.night.fill((0, 0, 0))
 
     def toggled(self):
         """A new Display switched between full screen and a window (F key)."""
@@ -1134,6 +1159,7 @@ class Display:
             self.pg.display.quit()                  # a fresh window: some systems keep
             new = Display(self.pg, self.restore_size or DEFAULT_WINDOW)   # the full-screen size otherwise
         new.switch_t = self.switch_t
+        new.night_dim, new.dim = self.night_dim, self.dim
         return new
 
     # ---- primitives ------------------------------------------------------
@@ -1197,8 +1223,25 @@ class Display:
         if a > 0:
             self.fade.set_alpha(int(255 * a))
             self.screen.blit(self.fade, (0, 0))
+        self.apply_dim()
         if self.present:
             self.pg.display.flip()
+
+    # ---- night dimming -----------------------------------------------------
+    def update_dim(self, now, dt):
+        """Fade towards night or normal brightness over DIM_FADE_SECS."""
+        full = 1.0 - NIGHT_BRIGHTNESS
+        target = full if self.night_dim and is_night(now) else 0.0
+        step = full * dt / DIM_FADE_SECS if DIM_FADE_SECS > 0 else 1.0
+        if self.dim < target:
+            self.dim = min(target, self.dim + step)
+        elif self.dim > target:
+            self.dim = max(target, self.dim - step)
+
+    def apply_dim(self):
+        if self.dim > 0.004:
+            self.night.set_alpha(int(255 * min(1.0, self.dim)))
+            self.screen.blit(self.night, (0, 0))
 
     def wrap_lines(self, text, kind, size, max_w):
         f = self.font(kind, size)
@@ -1259,6 +1302,7 @@ class Display:
         dots = "." * (int(now * 2) % 4)
         self.blit(self.text(f"Contacting sources{dots:<3}", "mono", 11, MUTED), (self.W // 2, cy + self.s(8)), "center")
         self.blit(self.text("BBC · AL JAZEERA · NPR · GDACS · CISA · WHO", "mono", 9, DIM), (self.W // 2, cy + self.s(26)), "center")
+        self.apply_dim()
         if self.present:
             self.pg.display.flip()
 
@@ -1499,6 +1543,10 @@ def run(disp, snapshot_dir=None, live=False):
         return
 
     rot = Rotator()
+    disp.update_dim(last, DIM_FADE_SECS)          # started at night: dim straight away
+    night = disp.night_dim and is_night(last)
+    if night:
+        log("INFO", f"night: screen dimmed to {int(NIGHT_BRIGHTNESS * 100)}% until {NIGHT_HOURS[1]:02}:00")
     running = True
     while running:
         now = time.time()
@@ -1524,6 +1572,11 @@ def run(disp, snapshot_dir=None, live=False):
             last_watch = now
         snap = snapshot()
         disp.step(snap, now - last)
+        disp.update_dim(now, now - last)
+        if disp.night_dim and is_night(now) != night:
+            night = not night
+            log("INFO", f"night: screen dimmed to {int(NIGHT_BRIGHTNESS * 100)}% until {NIGHT_HOURS[1]:02}:00"
+                if night else "morning: screen back to normal brightness")
         last = now
         view = rot.tick(now, snap)
         if rot.take_switched():
@@ -1538,7 +1591,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.4 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.5 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1600,6 +1653,26 @@ def run_selftest():
         disp.draw_main(snap, now, 0.5)
         disp = disp.toggled()                       # back to the window
         assert disp.screen.get_size() == (640, 480), disp.screen.get_size()
+        # night dimming: the hours, and that the picture really gets darker
+        at = lambda hh, mm: time.mktime((2026, 10, 11, hh, mm, 0, 0, 0, -1))
+        assert [is_night(at(h, m), (0, 6)) for h, m in ((23, 59), (0, 0), (5, 59), (6, 0), (12, 0))] == \
+            [False, True, True, False, False]
+        assert [is_night(at(h, 0), (22, 6)) for h in (21, 22, 3, 6)] == [False, True, True, False]
+        assert not is_night(at(1, 0), None)
+        disp.step(snap, 10)
+        disp.draw_main(snap, now, 0.5)
+        bright = sum(disp.screen.get_at((x, y))[1] for x in range(0, 640, 8) for y in range(0, 480, 8))
+        disp.night_dim, disp.dim = True, 1.0 - NIGHT_BRIGHTNESS
+        disp.draw_main(snap, now, 0.5)
+        dimmed = sum(disp.screen.get_at((x, y))[1] for x in range(0, 640, 8) for y in range(0, 480, 8))
+        assert dimmed < bright * (NIGHT_BRIGHTNESS + 0.1), (bright, dimmed)
+        disp.dim = 0.0
+        disp.update_dim(at(2, 0), 1.0)              # 1 s into the night: part of the way
+        assert 0 < disp.dim < 1.0 - NIGHT_BRIGHTNESS, disp.dim
+        disp.update_dim(at(2, 0), 60)
+        assert abs(disp.dim - (1.0 - NIGHT_BRIGHTNESS)) < 1e-9
+        disp.update_dim(at(6, 0), 60)               # 6 AM: back to normal
+        assert disp.dim == 0.0
         pygame.quit()
         print("selftest OK")
         return 0
@@ -1623,6 +1696,7 @@ def main():
     ap.add_argument("--demo", action="store_true", help="sample data, no network")
     ap.add_argument("--snapshot", metavar="DIR", help="save a PNG of each screen and exit")
     ap.add_argument("--check", action="store_true", help="test every news source and explain the scores")
+    ap.add_argument("--no-dim", action="store_true", help="keep full brightness at night (normally dims 00:00-06:00)")
     ap.add_argument("--selftest", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
     if args.selftest:
@@ -1643,9 +1717,10 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.4 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.5 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
+    disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim
     if live:
         load_state_cache()
         ensure_worker()
@@ -1683,6 +1758,11 @@ if __name__ == "__main__":
 # GTI
 #   Weighted root-mean-square of the four scores, so one severe category
 #   lifts it more than a plain average would.
+# Night
+#   From 00:00 to 06:00 (the Pi's local time - set the timezone with
+#   sudo raspi-config) every screen is drawn at NIGHT_BRIGHTNESS, fading over
+#   a few seconds. Change NIGHT_HOURS / NIGHT_BRIGHTNESS above, or run with
+#   --no-dim. Only this script dims; threat_screensaver.py never does.
 #
 # Limits: news coverage measures how much is REPORTED, not real-world danger.
 # Because the news categories are relative to the last 30 days, a long crisis
