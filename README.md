@@ -80,7 +80,7 @@ python3 threat_monitor.py --no-dim            # stay at full brightness at night
 Keys: **Esc/Q** quit · **→ / Space / tap** next screen · **←** previous ·
 **R** update now · **F** switch between window and full screen.
 
-The screen dims to 30% brightness from 12 midnight to 6 AM, using the Pi's
+The screen dims to 15% brightness from 12 midnight to 6 AM, using the Pi's
 own clock (set its timezone with `sudo raspi-config` → Localisation Options →
 Timezone). To change the hours or the night brightness, edit `NIGHT_HOURS` and
 `NIGHT_BRIGHTNESS` near the top of `threat_monitor.py`. The Windows and macOS

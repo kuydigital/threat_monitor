@@ -1060,7 +1060,7 @@ FADE_SECS = 0.25
 
 # Night dimming (this script only - the Windows and Mac screensavers never dim).
 NIGHT_HOURS = (0, 6)          # dim from 00:00 until 06:00 local time; None = never dim
-NIGHT_BRIGHTNESS = 0.3        # how bright the screen is at night (1.0 = normal)
+NIGHT_BRIGHTNESS = 0.15       # how bright the screen is at night (1.0 = normal)
 DIM_FADE_SECS = 3.0           # how long the change to and from night brightness takes
 
 
