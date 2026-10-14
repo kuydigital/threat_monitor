@@ -22,6 +22,7 @@ enum Text {
     static let magRx = Rx(#"\(Magnitude\s*([\d.]+)\s*M?[^)]*\)"#)
     static let gdacsDateRx = Rx(#"\s+\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(:\d{2})?\s*UTC"#)
     static let mmiRx = Rx(#"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+in MMI ([IVX]+)\b"#, ci: true)
+    static let placesRx = Rx(#"^(.*?\bin )([A-Z][^,]*(?:, [A-Z][^,]*){3,}),?\s*$"#)
     static let mmiWords: [String: String] = [
         "I": "unfelt", "II": "weak", "III": "weak", "IV": "light", "V": "moderate",
         "VI": "strong", "VII": "very strong", "VIII": "severe", "IX": "violent", "X": "extreme",
@@ -39,6 +40,17 @@ enum Text {
             let people = who.lowercased().hasPrefix("few") ? "few people" : "\(who) people"
             return "\(people) in \(mmiWords[level.uppercased()] ?? "MMI " + level) shaking"
         }
+        // "Drought is on going in Austria, Belgium, ... Ukraine," (29 countries) ->
+        // "Drought is on going in Austria, Belgium and 27 more countries"
+        if let m = placesRx.matches(t).first {
+            let ns = t as NSString
+            let lead = Rx.group(m, 1, ns) ?? ""
+            let places = (Rx.group(m, 2, ns) ?? "").components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if places.count >= 4 {
+                t = "\(lead)\(places[0]), \(places[1]) and \(places.count - 2) more countries"
+            }
+        }
         return Py.strip(Py.join(t), ". ", left: false)
     }
 
@@ -48,6 +60,7 @@ enum Text {
     static let tailRxs: [Rx] = [
         Rx(#"\s*[|–—-]\s*(live( updates| blog)?|as it happened|latest( updates)?|report|video|photos|opinion|analysis|explainer)\s*$"#, ci: true),
         Rx(#",?\s+according to [^,;]+$"#, ci: true),
+        Rx(#"\s+\|\s+[^|]{2,40}$"#),                         // "... | Newswise"
         Rx(#",\s+(\S+\s+){0,3}(says?|said|reports?|reported|claims?|claimed|warns?|warned|confirms?|confirmed|announces?|announced)\s*$"#, ci: true),
     ]
     static let leadAttrRx = Rx(#"^(officials?|police|authorities|reports?|sources|witnesses|experts?|analysts?|scientists|researchers|state media|residents)\s+(say|said|warn|warned|fear|believe|confirm|confirmed)\s+(that\s+)?"#, ci: true)
@@ -70,12 +83,15 @@ enum Text {
         (Rx(#"(?i)\btelecommunications\b"#), "telecoms"),
         (Rx(#"(?i)\bgovernment\b"#), "govt"),
         (Rx(#"\bVulnerability\b"#), "flaw"),
+        (Rx(#"\bCVE-\d{4}-\d+:?\s*"#), ""),                // CISA: the number means little on screen
     ]
     static let fillerRx = Rx(#"\b(a|an|the|reportedly|currently)\s+"#, ci: true)
     /// Where a trailing clause can be dropped.
     static let clauseRx = Rx(#"(;\s|,\s(?=(?:as|after|while|amid|with|despite|which|who|but|before|including|where|when|days|weeks|hours|months)\b)|,\s(?=[a-z][a-z-]*ing\b)|\s(?=(?:as|after|amid|while|despite|ahead of|that|which|days after|weeks after|hours after)\s))"#, ci: true)
     /// " - DR Congo": often a place, so cut last.
     static let dashRx = Rx(#"\s[–—-]\s"#)
+    /// Last resort before "…": any natural break, longest summary first.
+    static let cutRx = Rx(#"(:\s|(?:(?<=\w\w[?!])|(?<=[a-z]{3}\.))\s|,\s|\s(?=(?:[Aa]nd|[Ww]ith|[Ww]ithout|[Nn]ear|[Oo]ver|[Ff]or|[Ff]rom|[Ii]nto|[Vv]ia|[Tt]o|[Ii]n [Hh]onou?r [Oo]f)\s))"#)
     static let clauseMinWords = 6
     static let dangling: Set<String> = [
         "a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "for", "with", "by", "from",
@@ -133,6 +149,8 @@ enum Text {
             }
         }
         clauseCuts(t, dashRx)
+        // 6. last resort: the longest part that ends at any natural break
+        clauseCuts(t, cutRx)
         return (seen, tidy(t))
     }
 
@@ -158,7 +176,8 @@ enum Text {
 
     /// Every pattern used for headlines (the tests compare them with Python).
     static var allRx: [Rx] {
-        [suffixRx, normRx, magRx, gdacsDateRx, mmiRx, labelRx, bracketRx, leadAttrRx, fillerRx, clauseRx, dashRx]
+        [suffixRx, normRx, magRx, gdacsDateRx, mmiRx, placesRx, labelRx, bracketRx, leadAttrRx, fillerRx, clauseRx,
+         dashRx, cutRx]
             + tailRxs + abbreviations.map { $0.rx }
     }
 }

@@ -75,8 +75,9 @@ enum TM {
     static let mainSecs: Double = 12
     static let catSecs: Double = 8
     static let fadeSecs: Double = 0.25
-    static let headlineMaxLines = 3
-    static let headlineSizes: (big: Int, small: Int) = (21, 16)
+    static let headlineSize = 26             // fixed headline font, in 320x240 units
+    static let headlineMaxLines = 5          // longer headlines are summarized to fit
+    static let headlineArea: (top: Int, bottom: Int) = (38, 200)
     static let levels: [(limit: Int, name: String)] = [
         (30, "LOW"), (45, "GUARDED"), (60, "ELEVATED"), (75, "HIGH"), (101, "SEVERE"),
     ]

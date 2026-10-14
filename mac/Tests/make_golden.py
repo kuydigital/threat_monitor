@@ -107,6 +107,7 @@ g["condense_patterns"] = {
     "filler": [tm._FILLER_RE.pattern, flags(tm._FILLER_RE)],
     "clause": [tm._CLAUSE_RE.pattern, flags(tm._CLAUSE_RE)],
     "dash": [tm._DASH_RE.pattern, flags(tm._DASH_RE)],
+    "cut": [tm._CUT_RE.pattern, flags(tm._CUT_RE)],
 }
 g["feeds"] = {name: [{"key": f["key"], "label": f["label"], "window": f["window"], "scored": f["scored"],
                       "url": f["url"], "params": [[k, v] for k, v in (f["params"] or {}).items()]}
@@ -122,7 +123,8 @@ g["constants"] = {k: getattr(tm, k) for k in [
     "HEADLINE_MAX_LINES", "CLAUSE_MIN_WORDS", "WHO_DON_URL", "CISA_KEV_URL", "GOOGLE_NEWS",
     "GTI_WEIGHTS", "DEFAULT_NORMAL", "GDACS_GREEN_BY_TYPE", "GDACS_LEVEL", "USGS_PAGER", "CAT_NAMES",
     "EMPTY_MSG", "MMI_WORDS", "CATS"]}
-g["constants"]["HEADLINE_SIZES"] = list(tm.HEADLINE_SIZES)
+g["constants"]["HEADLINE_SIZE"] = tm.HEADLINE_SIZE
+g["constants"]["HEADLINE_AREA"] = list(tm.HEADLINE_AREA)
 g["constants"]["LEVELS"] = [[limit, name, list(color)] for limit, name, color in tm.LEVELS]
 g["constants"]["DANGLING"] = sorted(tm._DANGLING)
 g["constants"]["COMPONENT_KEYS"] = sorted(tm.COMPONENT_KEYS)
@@ -162,6 +164,11 @@ CRAFTED_TITLES = [
     "Israel strikes Gaza, killing dozens, as ceasefire talks stall amid pressure from the European Union and the United Arab Emirates",
     "Short headline",
     "A very long headline with lots of words that keeps going and going without any natural place to cut it at all because it has no commas or clauses and it never ends",
+    "EBOLA Infections EXPLODE to more than 9,000 cases in Congo as containment efforts falter",
+    "Is the \u201cAutism Epidemic\u201d Real, or Are We Better at Finding It? A Leading Pediatric Developmental Expert Weighs In on New JAMA Study | Newswise",
+    "Actively exploited: CVE-2026-88779 Citrix NetScaler Improper Restriction of Operations within the Bounds of a Memory Buffer Vulnerability",
+    "Sen. Warren demands answers from RFK Jr. over 'calamitous' response to cyclosporiasis outbreak in the U.S. Midwest this summer",
+    "Works on paper by Germany's most incisive post-war artists: Richter, Kiefer, Polke, Baselitz and Penck",
 ]
 titles.extend(CRAFTED_TITLES)
 titles = list(dict.fromkeys(t for t in titles if t))
@@ -207,6 +214,10 @@ gdacs_raw += [
     "Green earthquake (Magnitude 5.9M, Depth:45.951km) in Indonesia 03/10/2026 22:55 UTC, 130 thousand in MMI V",
     "Orange earthquake (Magnitude 6.8M, Depth:10km) in Japan 1/2/2026 3:04:05 UTC, Few people affected in MMI VII",
     "Red earthquake (Magnitude 7.4M, Depth:33km) in Chile 12/12/2026 10:00 UTC, 1.2 million in MMI IX",
+    "Drought is on going in Austria, Bosnia & Herzegovina, Belgium, Belarus, Switzerland, Czech Republic, "
+    "Germany, Denmark, Spain, France, Croatia, Hungary, Ireland, Italy, Liechtenstein, Luxembourg, Moldova, "
+    "Montenegro, Netherlands, Norway, Poland, Romania, Serbia, Russia, Sweden, Slovenia, Slovakia, San Marino, Ukraine,",
+    "Drought is on going in Brazil, Argentina, Paraguay",
 ]
 g["gdacs_titles"] = [[t, tm.tidy_gdacs_title(t)] for t in dict.fromkeys(gdacs_raw)]
 

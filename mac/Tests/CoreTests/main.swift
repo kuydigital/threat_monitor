@@ -125,6 +125,7 @@ checkPattern("lead", Text.leadAttrRx, cp["lead"])
 checkPattern("filler", Text.fillerRx, cp["filler"])
 checkPattern("clause", Text.clauseRx, cp["clause"])
 checkPattern("dash", Text.dashRx, cp["dash"])
+checkPattern("cut", Text.cutRx, cp["cut"])
 let tails = arr(cp["tails"])
 expect("patterns", tails.count == Text.tailRxs.count, "tail pattern count")
 for (i, t) in tails.enumerated() where i < Text.tailRxs.count { checkPattern("tail \(i)", Text.tailRxs[i], t) }
@@ -179,7 +180,7 @@ let swiftConstants: [String: Any] = [
     "GOOGLE_NEWS": TM.googleNews, "GTI_WEIGHTS": TM.gtiWeights, "DEFAULT_NORMAL": TM.defaultNormal,
     "GDACS_GREEN_BY_TYPE": TM.gdacsGreenByType, "GDACS_LEVEL": TM.gdacsLevel, "USGS_PAGER": TM.usgsPager,
     "CAT_NAMES": TM.catNames, "EMPTY_MSG": TM.emptyMsg, "MMI_WORDS": Text.mmiWords, "CATS": TM.cats,
-    "HEADLINE_SIZES": [TM.headlineSizes.big, TM.headlineSizes.small],
+    "HEADLINE_SIZE": TM.headlineSize, "HEADLINE_AREA": [TM.headlineArea.top, TM.headlineArea.bottom],
     "DANGLING": Array(Text.dangling).sorted(), "COMPONENT_KEYS": Config.componentKeys.sorted(),
 ]
 var gc = obj(golden["constants"])

@@ -1,6 +1,6 @@
-# SYSTEM THREAT MONITOR  v3.5
+# SYSTEM THREAT MONITOR  v3.6
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
-# Revised: Sunday, October 11, 2026, 1:34 AM (Philippine time)
+# Revised: Wednesday, October 14, 2026, 1:40 PM (Philippine time)
 #
 # Run:   python3 threat_monitor.py                    (fullscreen, live data)
 #        python3 threat_monitor.py --windowed 320x240 (in a window)
@@ -27,9 +27,10 @@
 #     or crashed sync can never leave the screen on "Contacting sources", the
 #     background fetcher restarts itself if it ever stops, and everything is
 #     logged to threat_monitor.log next to this script.
-#   * Headlines are shown in at most 3 lines; longer ones are condensed
-#     (labels, attributions and filler removed, names abbreviated, trailing
-#     clauses dropped) and only cut with "…" as a last resort.
+#   * Headlines use one fixed, large size on every screen (HEADLINE_SIZE) in
+#     at most 5 lines; longer ones are summarized (labels, attributions and
+#     filler removed, names abbreviated, trailing clauses and subtitles
+#     dropped at a natural break) and only cut with "…" as a last resort.
 # -----------------------------------------------------------------------------
 
 import argparse
@@ -565,6 +566,12 @@ def tidy_gdacs_title(title):
         who = "few people" if m.group(1).lower().startswith("few") else f"{m.group(1)} people"
         return f"{who} in {MMI_WORDS.get(m.group(2).upper(), 'MMI ' + m.group(2))} shaking"
     t = re.sub(r"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+in MMI ([IVX]+)\b", mmi, t, flags=re.I)
+    # "Drought is on going in Austria, Belgium, ... Ukraine," (29 countries) ->
+    # "Drought is on going in Austria, Belgium and 27 more countries"
+    m = re.match(r"^(.*?\bin )([A-Z][^,]*(?:, [A-Z][^,]*){3,}),?\s*$", t)
+    if m:
+        places = [p.strip() for p in m.group(2).split(",") if p.strip()]
+        t = f"{m.group(1)}{places[0]}, {places[1]} and {len(places) - 2} more countries"
     return " ".join(t.split()).rstrip(". ")
 
 
@@ -632,6 +639,7 @@ _TAIL_RES = [
     re.compile(r"\s*[|–—-]\s*(live( updates| blog)?|as it happened|latest( updates)?|report|video|"
                r"photos|opinion|analysis|explainer)\s*$", re.I),
     re.compile(r",?\s+according to [^,;]+$", re.I),
+    re.compile(r"\s+\|\s+[^|]{2,40}$"),              # "... | Newswise"
     re.compile(r",\s+(\S+\s+){0,3}(says?|said|reports?|reported|claims?|claimed|warns?|warned|"
                r"confirms?|confirmed|announces?|announced)\s*$", re.I),
 ]
@@ -657,6 +665,7 @@ _ABBREVIATIONS = [
     (r"(?i)\btelecommunications\b", "telecoms"),
     (r"(?i)\bgovernment\b", "govt"),
     (r"\bVulnerability\b", "flaw"),
+    (r"\bCVE-\d{4}-\d+:?\s*", ""),                     # CISA: the number means little on screen
 ]
 _ABBREVIATIONS = [(re.compile(p), r) for p, r in _ABBREVIATIONS]
 _FILLER_RE = re.compile(r"\b(a|an|the|reportedly|currently)\s+", re.I)
@@ -668,6 +677,12 @@ _CLAUSE_RE = re.compile(          # where a trailing clause can be dropped
     r"|\s(?=(?:as|after|amid|while|despite|ahead of|that|which|days after|weeks after|hours after)\s))",
     re.I)
 _DASH_RE = re.compile(r"\s[–—-]\s")       # " - DR Congo": often a place, so cut last
+_CUT_RE = re.compile(            # last resort before "…": any natural break, longest summary first
+    r"(:\s"                                          # "Headline: subtitle"
+    r"|(?:(?<=\w\w[?!])|(?<=[a-z]{3}\.))\s"          # end of a sentence ("Jr." and "U.S." are not)
+    r"|,\s"                                          # any comma
+    r"|\s(?=(?:[Aa]nd|[Ww]ith|[Ww]ithout|[Nn]ear|[Oo]ver|[Ff]or|[Ff]rom|[Ii]nto|[Vv]ia|[Tt]o|"
+    r"[Ii]n [Hh]onou?r [Oo]f)\s))")
 CLAUSE_MIN_WORDS = 6           # never cut a headline down to fewer words than this
 _DANGLING = {"a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "for", "with", "by", "from",
              "as", "after", "amid", "while", "but", "that", "its", "their", "his", "her", "is", "are", "was",
@@ -722,6 +737,8 @@ def condense_steps(text):
         emit(t)
         clause_cuts(t, _CLAUSE_RE)
     clause_cuts(t, _DASH_RE)
+    # 6. last resort: the longest part that ends at any natural break
+    clause_cuts(t, _CUT_RE)
     return seen, _tidy(t)   # last value: fully condensed text without cuts (for "…" fallback)
 
 
@@ -1051,8 +1068,9 @@ MONO_FONTS = "dejavusansmono,liberationmono,consolas,menlo,ubuntumono,couriernew
 SANS_FONTS = "dejavusans,liberationsans,arial,helvetica,ubuntu,freesans"
 
 DEFAULT_WINDOW = (960, 720)   # window size when F switches from full screen to a window
-HEADLINE_MAX_LINES = 3
-HEADLINE_SIZES = (21, 16)      # largest / smallest headline font, in 320x240 units
+HEADLINE_SIZE = 26             # headline font, in 320x240 units - the same on every screen
+HEADLINE_MAX_LINES = 5         # longer headlines are summarized to fit
+HEADLINE_AREA = (38, 200)      # top and bottom of the headline area, in 320x240 units
 
 MAIN_SECS, CAT_SECS = 12, 8
 FPS = 15
@@ -1257,28 +1275,27 @@ class Display:
             lines.append(cur)
         return lines
 
-    def headline_layout(self, text, max_w):
-        """(lines, size, condensed?) for a headline in at most HEADLINE_MAX_LINES
-        lines: the original at the largest font that fits, else the gentlest
-        condensed version that fits, else a '…' cut. Cached per headline."""
-        key = (text, max_w)
+    def headline_lines(self):
+        """How many headline lines fit in the headline area (at most HEADLINE_MAX_LINES)."""
+        top, bottom = HEADLINE_AREA
+        lh = int(self.font("sans", HEADLINE_SIZE).get_linesize() * 1.02)
+        return max(1, min(HEADLINE_MAX_LINES, (self.s(bottom) - self.s(top)) // lh))
+
+    def headline_layout(self, text, max_w, max_lines=HEADLINE_MAX_LINES):
+        """(lines, condensed?) for a headline at the fixed HEADLINE_SIZE in at
+        most max_lines lines: the original if it fits, else the gentlest
+        summary that fits, else a '…' cut. Cached per headline."""
+        key = (text, max_w, max_lines)
         hit = self._layouts.get(key)
         if hit:
             return hit
-        big, small = HEADLINE_SIZES
-        result = None
+        fits = lambda t: len(self.wrap_lines(t, "sans", HEADLINE_SIZE, max_w)) <= max_lines
         steps, condensed = condense_steps(text)
-        for i, cand in enumerate(steps):
-            for size in range(big, small - 1, -1):
-                lines = self.wrap_lines(cand, "sans", size, max_w)
-                if len(lines) <= HEADLINE_MAX_LINES:
-                    result = (lines, size, i > 0)
-                    break
-            if result:
-                break
-        if result is None:
-            fits = lambda t: len(self.wrap_lines(t, "sans", small, max_w)) <= HEADLINE_MAX_LINES
-            result = (self.wrap_lines(truncate_words(fits, condensed), "sans", small, max_w), small, True)
+        best = next(((i, cand) for i, cand in enumerate(steps) if fits(cand)), None)
+        if best is not None:
+            result = (self.wrap_lines(best[1], "sans", HEADLINE_SIZE, max_w), best[0] > 0)
+        else:
+            result = (self.wrap_lines(truncate_words(fits, condensed), "sans", HEADLINE_SIZE, max_w), True)
         if len(self._layouts) > 200:
             self._layouts.clear()
         self._layouts[key] = result
@@ -1445,12 +1462,12 @@ class Display:
         else:
             title, meta, page, colour = EMPTY_MSG[cat], "", "", MUTED
 
-        top, bottom = self.y(40), self.y(196)
-        lines, size, _ = self.headline_layout(title, W - 2 * m)
-        lh = int(self.font("sans", size).get_linesize() * 1.02)
+        top, bottom = self.y(HEADLINE_AREA[0]), self.y(HEADLINE_AREA[1])
+        lines, _ = self.headline_layout(title, W - 2 * m, self.headline_lines())
+        lh = int(self.font("sans", HEADLINE_SIZE).get_linesize() * 1.02)
         ty = top + max(0, (bottom - top - len(lines) * lh) // 2)
         for i, line in enumerate(lines):
-            self.blit(self.text(line, "sans", size, colour), (m, ty + i * lh))
+            self.blit(self.text(line, "sans", HEADLINE_SIZE, colour), (m, ty + i * lh))
 
         my = self.y(210)
         if meta:
@@ -1591,7 +1608,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.5 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.6 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1717,7 +1734,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.5 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.6 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim

@@ -63,7 +63,7 @@ final class Renderer {
     private var oy: CGFloat = 0
     private var m: CGFloat = 10
     private var fonts: [String: NSFont] = [:]
-    private var layouts: [String: (lines: [String], size: Int)] = [:]
+    private var layouts: [String: [String]] = [:]
     private var anim: [String: Double] = [:]
     private var gtiAnim: Double?
     private let clock: DateFormatter = {
@@ -206,32 +206,30 @@ final class Renderer {
         return lines
     }
 
-    /// A headline in at most 3 lines: the original at the largest size that
-    /// fits, else the gentlest condensed version that fits, else a "…" cut.
-    func headlineLayout(_ str: String, _ maxW: CGFloat) -> (lines: [String], size: Int) {
-        let key = "\(maxW)|\(str)"
+    /// How many headline lines fit in the headline area (at most headlineMaxLines).
+    func headlineLines() -> Int {
+        let lh = (lineHeight(font(.sans, CGFloat(TM.headlineSize))) * 1.02).rounded(.down)
+        let room = s(CGFloat(TM.headlineArea.bottom)) - s(CGFloat(TM.headlineArea.top))
+        return max(1, min(TM.headlineMaxLines, Int(room / max(1, lh))))
+    }
+
+    /// A headline at the fixed headline size in at most `maxLines` lines: the
+    /// original if it fits, else the gentlest summary that fits, else a "…" cut.
+    func headlineLayout(_ str: String, _ maxW: CGFloat, _ maxLines: Int) -> [String] {
+        let key = "\(maxW)|\(maxLines)|\(str)"
         if let hit = layouts[key] { return hit }
-        let big = TM.headlineSizes.big, small = TM.headlineSizes.small
-        var result: (lines: [String], size: Int)?
+        let f = font(.sans, CGFloat(TM.headlineSize))
+        let fits: (String) -> Bool = { self.wrapLines($0, f, maxW).count <= maxLines }
         let steps = Text.condenseSteps(str)
-        search: for cand in steps.steps {
-            for size in stride(from: big, through: small, by: -1) {
-                let lines = wrapLines(cand, font(.sans, CGFloat(size)), maxW)
-                if lines.count <= TM.headlineMaxLines {
-                    result = (lines, size)
-                    break search
-                }
-            }
-        }
-        if result == nil {
-            let f = font(.sans, CGFloat(small))
-            let cut = Text.truncateWords({ self.wrapLines($0, f, maxW).count <= TM.headlineMaxLines }, steps.condensed)
-            result = (wrapLines(cut, f, maxW), small)
+        let lines: [String]
+        if let best = steps.steps.first(where: fits) {
+            lines = wrapLines(best, f, maxW)
+        } else {
+            lines = wrapLines(Text.truncateWords(fits, steps.condensed), f, maxW)
         }
         if layouts.count > 200 { layouts.removeAll() }
-        let r: (lines: [String], size: Int) = result ?? (lines: [str], size: small)
-        layouts[key] = r
-        return r
+        layouts[key] = lines
+        return lines
     }
 
     // ---- animation of bar lengths only (numbers are always exact) ----------
@@ -435,12 +433,12 @@ final class Renderer {
             colour = Palette.text
         }
 
-        let top = y(40), bottom = y(196)
-        let lay = headlineLayout(title, W - 2 * m)
-        let f = font(.sans, CGFloat(lay.size))
+        let top = y(CGFloat(TM.headlineArea.top)), bottom = y(CGFloat(TM.headlineArea.bottom))
+        let lines = headlineLayout(title, W - 2 * m, headlineLines())
+        let f = font(.sans, CGFloat(TM.headlineSize))
         let lh = (lineHeight(f) * 1.02).rounded(.down)
-        let ty = top + max(0, ((bottom - top - CGFloat(lay.lines.count) * lh) / 2).rounded(.down))
-        for (i, l) in lay.lines.enumerated() {
+        let ty = top + max(0, ((bottom - top - CGFloat(lines.count) * lh) / 2).rounded(.down))
+        for (i, l) in lines.enumerated() {
             text(l, f, colour, CGPoint(x: m, y: ty + CGFloat(i) * lh))
         }
 
