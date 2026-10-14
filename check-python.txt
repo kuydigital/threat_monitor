@@ -1,0 +1,39 @@
+Threat Monitor v3.6 source check - clock 2026-10-14 05:18 UTC, local 2026-10-14 05:18 UTC
+Data folder: /Users/runner/work/threat_monitor/threat_monitor   learned history: 0 h
+Fetching all sources (up to 45 s)...
+
+WAR  ->  35
+   BBC           23 recent,  4 threat-related, level 0.48  vs normal 0.55 (starting guess) = 0.87x
+   Al Jazeera    25 recent,  7 threat-related, level 0.72  vs normal 0.80 (starting guess) = 0.90x
+   NPR           10 recent,  3 threat-related, level 0.60  vs normal 0.50 (starting guess) = 1.20x
+   Google News  81 matching headlines (shown on screen, not scored)
+      - Ukraine Invasion Day 1,693: only three-dimensional chess killed RU bot-farms  [Daily Kos]
+      - Iran said shoring up defenses at nuclear sites, warning it could invade neighbors if war resumes  [The Times of Israel]
+      - Russian strikes hit key power plant in Kyiv, Zelensky says  [BBC]
+
+CYB  ->  52
+   BBC            6 recent,  2 threat-related, level 1.25  vs normal 0.30 (starting guess) = 4.00x
+   NPR           10 recent,  0 threat-related, level 0.00  vs normal 0.20 (starting guess) = 0.00x
+   Google News  84 matching headlines (shown on screen, not scored)
+   CISA           7 recent,  7 threat-related, level 0.35  vs normal 0.30 (starting guess) = 1.17x
+      - Cyberattack on French supermarket fridges sparks investigation  [Latest news from Azerbaijan]
+      - Eastern States’ Grocers Shut Online Systems After Cyberattack  [Insurance Journal]
+      - Ransomware Gangs Embrace Physical Threats, Family Stalking?  [Dark Reading]
+
+BIO  ->  41
+   BBC           11 recent,  2 threat-related, level 0.27  vs normal 0.40 (starting guess) = 0.68x
+   NPR           10 recent,  2 threat-related, level 0.70  vs normal 0.35 (starting guess) = 2.00x
+   Google News  59 matching headlines (shown on screen, not scored)
+   WHO            2 recent,  2 threat-related, level 0.50  vs normal 0.50 (starting guess) = 1.00x
+      - EBOLA Infections EXPLODE to more than 9,000 cases in Congo as containment efforts falter  [KTLA]
+      - DR Congo confirms 9,066 Ebola cases, 4,381 deaths  [Qazinform]
+      - DR Congo's Ebola cases top 9,000 as vaccine trial nears launch  [People's Daily Online]
+
+   GDACS        197 current events
+   USGS         18 current events
+DIS  ->  89
+      - Red notification for tropical cyclone TRUDY-26  [GDACS]
+      - Drought is on going in Austria, Bosnia & Herzegovina and 27 more countries  [GDACS]
+      - Volcanic eruption is on going for Kanlaon in Philippines  [GDACS]
+
+Done in 2.2 s. Log file: /Users/runner/work/threat_monitor/threat_monitor/threat_monitor.log

@@ -1,0 +1,38 @@
+Swift: swift-driver version: 1.148.6 Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+Compiling for arm64...
+Sources/Saver/Renderer.swift:239:52: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+237 |         let k = min(1.0, max(0, dt) * 5)
+238 |         for c in TM.cats {
+239 |             if let target = snap.slot(c).score.map { Double($0) } {
+    |                                                    `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+240 |                 let cur = anim[c] ?? target
+241 |                 anim[c] = cur + (target - cur) * k
+
+Sources/Saver/Renderer.swift:246:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+244 |             }
+245 |         }
+246 |         if let target = snap.gti.map { Double($0) } {
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+247 |             let cur = gtiAnim ?? target
+248 |             gtiAnim = cur + (target - cur) * k
+Compiling for x86_64...
+Sources/Saver/Renderer.swift:239:52: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+237 |         let k = min(1.0, max(0, dt) * 5)
+238 |         for c in TM.cats {
+239 |             if let target = snap.slot(c).score.map { Double($0) } {
+    |                                                    `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+240 |                 let cur = anim[c] ?? target
+241 |                 anim[c] = cur + (target - cur) * k
+
+Sources/Saver/Renderer.swift:246:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+244 |             }
+245 |         }
+246 |         if let target = snap.gti.map { Double($0) } {
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+247 |             let cur = gtiAnim ?? target
+248 |             gtiAnim = cur + (target - cur) * k
+build/Threat Monitor.saver: replacing existing signature
+build/Threat Monitor.saver: valid on disk
+build/Threat Monitor.saver: satisfies its Designated Requirement
+Architectures in the fat file: build/Threat Monitor.saver/Contents/MacOS/ThreatMonitor are: x86_64 arm64 
+Built build/Threat Monitor.saver (version 1.1.0)

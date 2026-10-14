@@ -1,0 +1,17 @@
+WAR:BBC         ok
+WAR:ALJAZEERA   ok
+WAR:NPR         ok
+WAR:GOOGLE      ok
+CYB:BBC         ok
+CYB:NPR         ok
+CYB:GOOGLE      ok
+CYB:CISA        ok
+BIO:BBC         ok
+BIO:NPR         ok
+BIO:GOOGLE      ok
+BIO:WHO         ok
+DIS:GDACS       ok
+DIS:USGS        ok
+
+Python reference: WAR 35, DIS 89, CYB 52, BIO 41, GTI 55
+461 keyword cases, 477 headlines, 445 feed stories

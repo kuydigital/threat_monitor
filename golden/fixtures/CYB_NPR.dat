@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:npr="https://www.npr.org/rss/" xmlns:nprml="https://api.npr.org/nprml" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/" version="2.0">
+  <channel>
+    <title>NPR Topics: Technology</title>
+    <link>https://www.npr.org/templates/story/story.php?storyId=1019</link>
+    <description>Latest technology news and breakthroughs in technology, science, and industry. Download the NPR Technology podcast and Technology RSS feed.</description>
+    <language>en</language>
+    <copyright>Copyright 2024 NPR - For Personal Use Only</copyright>
+    <generator>Story API Shim 1.2.24</generator>
+    <lastBuildDate>Wed, 14 Oct 2026 01:13:01 -0400</lastBuildDate>
+    <image>
+      <url>https://media.npr.org/images/podcasts/primary/npr_generic_image_300.jpg?s=200</url>
+      <title>NPR Topics: Technology</title>
+      <link>https://www.npr.org/sections/technology/</link>
+    </image>
+    <item>
+      <title>For reporters covering AI, keeping up with story is both tough and exciting</title>
+      <description>How NPR&apos;s team covering AI covers their increasingly important and fast moving beat.</description>
+      <pubDate>Sat, 10 Oct 2026 17:47:03 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/10/nx-s1-5994366/for-reporters-covering-ai-keeping-up-with-story-is-both-tough-and-exciting</link>
+      <guid>https://www.npr.org/2026/10/10/nx-s1-5994366/for-reporters-covering-ai-keeping-up-with-story-is-both-tough-and-exciting</guid>
+      <content:encoded><![CDATA[<p>How NPR's team covering AI covers their increasingly important and fast moving beat.</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5994366' />]]></content:encoded>
+      <dc:creator>Gabriel J. Sánchez</dc:creator>
+    </item>
+    <item>
+      <title>What are they saying about AI at San Francisco Tech Week?</title>
+      <description>Tech workers gathered in San Francisco this week to talk about the opportunities they see for their industry, their mixed feelings about AI, and the high cost of living in the Bay Area.</description>
+      <pubDate>Sat, 10 Oct 2026 17:27:04 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/10/nx-s1-5995420/what-are-they-saying-about-ai-at-san-francisco-tech-week</link>
+      <guid>https://www.npr.org/2026/10/10/nx-s1-5995420/what-are-they-saying-about-ai-at-san-francisco-tech-week</guid>
+      <content:encoded><![CDATA[<p>Tech workers gathered in San Francisco this week to talk about the opportunities they see for their industry, their mixed feelings about AI, and the high cost of living in the Bay Area.</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5995420' />]]></content:encoded>
+      <dc:creator>John Ruwitch</dc:creator>
+    </item>
+    <item>
+      <title>Ex-OpenAI safety lead David Robinson warns of &apos;broken&apos; tech culture</title>
+      <description>David Robinson is the latest tech industry employee to quit over AI safety concerns. He tells NPR&apos;s Scott Simon the &quot;culture is broken&quot; at OpenAI.</description>
+      <pubDate>Sat, 10 Oct 2026 07:40:46 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/10/nx-s1-5992872/ex-openai-safety-lead-david-robinson-warns-of-broken-tech-culture</link>
+      <guid>https://www.npr.org/2026/10/10/nx-s1-5992872/ex-openai-safety-lead-david-robinson-warns-of-broken-tech-culture</guid>
+      <content:encoded><![CDATA[<p>David Robinson is the latest tech industry employee to quit over AI safety concerns. He tells NPR's Scott Simon the "culture is broken" at OpenAI.</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5992872' />]]></content:encoded>
+      <dc:creator>Scott Simon</dc:creator>
+    </item>
+    <item>
+      <title>Kalshi taps former FBI agent to fight against money laundering</title>
+      <description>The prediction market company says it wants to prevent its platform from being abused by criminals. The company is facing mounting pressure over market manipulation and insider trading on the site.</description>
+      <pubDate>Fri, 09 Oct 2026 18:23:11 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/09/nx-s1-5996683/kalshi-fbi-sean-fern-money-laundering</link>
+      <guid>https://www.npr.org/2026/10/09/nx-s1-5996683/kalshi-fbi-sean-fern-money-laundering</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/1920x1945+0+0/resize/1920x1945!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F9a%2F1c%2Fdb89fe814ef380a180ae4dfac20a%2Fsean-fern-photo.jpg' alt='Sean Fern, a former FBI agent, is joining the prediction market platform Kalshi to lead the company's efforts in fighting money laundering.'/><p>The prediction market company says it wants to prevent its platform from being abused by criminals. The company is facing mounting pressure over market manipulation and insider trading on the site.</p><p>(Image credit: Provided by Kalshi)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5996683' />]]></content:encoded>
+      <dc:creator>Bobby Allyn</dc:creator>
+    </item>
+    <item>
+      <title>Fired OpenAI employees question the company&apos;s commitment to safety</title>
+      <description>The three fired workers say OpenAI punished them for being outspoken about safety. The company disputes the claims and says they were fired over mishandling sensitive information.</description>
+      <pubDate>Fri, 09 Oct 2026 17:28:09 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/09/nx-s1-5996890/openai-safety-firings</link>
+      <guid>https://www.npr.org/2026/10/09/nx-s1-5996890/openai-safety-firings</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/8256x5504+0+0/resize/8256x5504!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F4d%2Fab%2F353f227b4ed395e0c6390444a5a6%2Fgettyimages-2295203915.jpg' alt='Three employees recently fired by OpenAI allege the company punished them for being outspoken about safety. OpenAI disputes the claims and says they were dismissed for mishandling sensitive information.'/><p>The three fired workers say OpenAI punished them for being outspoken about safety. The company disputes the claims and says they were fired over mishandling sensitive information.</p><p>(Image credit: Andrej Ivanov)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5996890' />]]></content:encoded>
+      <dc:creator>Huo Jingnan</dc:creator>
+    </item>
+    <item>
+      <title>OpenAI caught Russians and Iranians using ChatGPT for influence campaigns</title>
+      <description>The company says Russian operatives used its AI chatbot to update their bosses, shedding light on influence campaigns previously not attributed to Russia.</description>
+      <pubDate>Thu, 08 Oct 2026 20:25:15 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/08/nx-s1-5995576/openai-russia-iran-influence-operations-chatgpt</link>
+      <guid>https://www.npr.org/2026/10/08/nx-s1-5995576/openai-russia-iran-influence-operations-chatgpt</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/5163x3442+0+0/resize/5163x3442!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fe8%2Fc7%2F6cccc55c4e25a530dc16749b37cb%2Fap26272792510419.jpg' alt='OpenAI says Russian operatives used its AI chatbot to update their bosses, shedding light on influence campaigns previously not attributed to Russia.'/><p>The company says Russian operatives used its AI chatbot to update their bosses, shedding light on influence campaigns previously not attributed to Russia.</p><p>(Image credit: Jeff Chiu)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5995576' />]]></content:encoded>
+      <dc:creator>Huo Jingnan</dc:creator>
+    </item>
+    <item>
+      <title>Backlash as American tech giants look to build data centers in Australia</title>
+      <description>Facing legal challenges and public backlash at home, American tech giants are looking abroad for new opportunities in Australia. But the reception down under may not be quite as warm as they hope.</description>
+      <pubDate>Thu, 08 Oct 2026 18:20:37 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/08/nx-s1-5993509/backlash-as-american-tech-giants-look-to-build-data-centers-in-australia</link>
+      <guid>https://www.npr.org/2026/10/08/nx-s1-5993509/backlash-as-american-tech-giants-look-to-build-data-centers-in-australia</guid>
+      <content:encoded><![CDATA[<p>Facing legal challenges and public backlash at home, American tech giants are looking abroad for new opportunities in Australia. But the reception down under may not be quite as warm as they hope.</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5993509' />]]></content:encoded>
+      <dc:creator>Kristina Kukolja</dc:creator>
+    </item>
+    <item>
+      <title>Margaret Hamilton, whose software sent humans to the moon, dies at 90</title>
+      <description>Hamilton was in her early thirties when she led the team of software engineers that powered NASA&apos;s Apollo missions. She later said, &quot;There was no choice but to be pioneers.&quot;</description>
+      <pubDate>Thu, 08 Oct 2026 17:38:36 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/08/nx-s1-5994972/margaret-hamilton-obituary-software-engineer-apollo</link>
+      <guid>https://www.npr.org/2026/10/08/nx-s1-5994972/margaret-hamilton-obituary-software-engineer-apollo</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/3001x2394+0+0/resize/3001x2394!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fb9%2F28%2F2b7769f949e6bd4cd9edf5f69eae%2Fap6911250352.jpg' alt='Margaret Hamilton sits in mock-up of Apollo the command module on display  at MIT in 1969.'/><p>Hamilton was in her early thirties when she led the team of software engineers that powered NASA's Apollo missions. She later said, "There was no choice but to be pioneers."</p><p>(Image credit: File)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5994972' />]]></content:encoded>
+      <dc:creator>Rachel Treisman</dc:creator>
+    </item>
+    <item>
+      <title>As crypto and prediction markets expand, their regulator shrinks</title>
+      <description>Even as the agency is tasked with drawing up new rules for crypto and prediction markets, its staffing and enforcement actions have dropped precipitously during the second Trump administration.</description>
+      <pubDate>Thu, 08 Oct 2026 05:00:00 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/08/nx-s1-5903204/crypto-prediction-markets-cftc-weakens</link>
+      <guid>https://www.npr.org/2026/10/08/nx-s1-5903204/crypto-prediction-markets-cftc-weakens</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/8640x5760+0+0/resize/8640x5760!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F55%2Fc5%2Fe307a232477ba313b329f3da33fd%2Fap26231749176175.jpg' alt='President Donald Trump shakes hands with Commodity Futures Trading Commission (CFTC) Chairman Michael Selig during a meeting with technology leaders in the Roosevelt Room of the White House, Wednesday, Aug. 19, 2026, in Washington.'/><p>Even as the agency is tasked with drawing up new rules for crypto and prediction markets, its staffing and enforcement actions have dropped precipitously during the second Trump administration.</p><p>(Image credit: Jacquelyn Martin)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5903204' />]]></content:encoded>
+      <dc:creator>Luke Garrett</dc:creator>
+    </item>
+    <item>
+      <title>How &apos;Musk&apos; director Alex Gibney became a critic</title>
+      <description>A trove of documents and interviews with people close to tech billionaire Elon Musk reveal a damning picture of his rise as one of the world&apos;s richest and most powerful men.</description>
+      <pubDate>Thu, 08 Oct 2026 04:45:37 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/07/nx-s1-5960380/musk-film-alex-gibney</link>
+      <guid>https://www.npr.org/2026/10/07/nx-s1-5960380/musk-film-alex-gibney</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/4000x2778+0+0/resize/4000x2778!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F4b%2Fea%2F9c158f894b888dd7fa7db1a267fc%2Fmusk-still-2-credit-ken-cedenoupi-upi-alamy-news.jpg' alt='Tesla and SpaceX CEO Elon Musk gestures on stage at the Capital One Arena after President-elect Donald Trump is sworn in as the 47th President of the United States in Washington, DC on Monday, January 20, 2025.'/><p>A trove of documents and interviews with people close to tech billionaire Elon Musk reveal a damning picture of his rise as one of the world's richest and most powerful men.</p><p>(Image credit: Ken Cedeno)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-5960380' />]]></content:encoded>
+      <dc:creator>Steve Inskeep</dc:creator>
+    </item>
+  </channel>
+</rss>

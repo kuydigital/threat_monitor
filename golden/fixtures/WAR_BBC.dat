@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+    <channel>
+        <title><![CDATA[BBC News]]></title>
+        <description><![CDATA[BBC News - World]]></description>
+        <link>https://www.bbc.co.uk/news/world</link>
+        <image>
+            <url>https://news.bbcimg.co.uk/nol/shared/img/bbc_news_120x60.gif</url>
+            <title>BBC News</title>
+            <link>https://www.bbc.co.uk/news/world</link>
+        </image>
+        <generator>RSS for Node</generator>
+        <lastBuildDate>Wed, 14 Oct 2026 05:17:49 GMT</lastBuildDate>
+        <atom:link href="https://feeds.bbci.co.uk/news/world/rss.xml" rel="self" type="application/rss+xml"/>
+        <copyright><![CDATA[Copyright: (C) British Broadcasting Corporation, see https://www.bbc.co.uk/usingthebbc/terms-of-use/#15metadataandrssfeeds for terms and conditions of reuse.]]></copyright>
+        <language><![CDATA[en-gb]]></language>
+        <ttl>15</ttl>
+        <item>
+            <title><![CDATA[Pope diagnosed with lung cancer but had successful surgery, Vatican says]]></title>
+            <description><![CDATA[Pope Leo had successful surgery to remove a lower lobe of his right lung, the Vatican said.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/ck1wvd9dvv22o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/ck1wvd9dvv22o#0</guid>
+            <pubDate>Wed, 14 Oct 2026 00:17:00 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/ccec/live/9e543840-c71b-11f1-bc2e-018d645d8d21.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Saudi man charged with planting 'sophisticated' recording device in OpenAI office]]></title>
+            <description><![CDATA[Prosecutors say the device, wrapped in toilet paper, was found inserted in a USB port on the back of a TV in an executive conference room. ]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cwg5jq4vlddzo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cwg5jq4vlddzo#0</guid>
+            <pubDate>Tue, 13 Oct 2026 21:42:49 GMT</pubDate>
+            <media:thumbnail width="194" height="109" url="https://ichef.bbci.co.uk/ace/standard/194/cpsprodpb/59c9/live/4ad4e9c0-c74e-11f1-a64c-550be9e3c66b.png"/>
+        </item>
+        <item>
+            <title><![CDATA[Germany puts Ukrainian on trial accused of blowing up Nord Stream pipelines]]></title>
+            <description><![CDATA[Four years after the attacks, Serhii K will appear in court accused of a plot to destroy Russia's gas pipelines to Germany.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cw99zpmnxzmjo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cw99zpmnxzmjo#0</guid>
+            <pubDate>Tue, 13 Oct 2026 23:42:22 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/8583/live/42414480-c72f-11f1-bc2e-018d645d8d21.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[MI5 chief warns of threats to UK from Russia, Iran and AI]]></title>
+            <description><![CDATA[Sir Ken McCallum says operations to tackle terrorism and state threats are now roughly of an "equal scale".]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c60rl5vwpk02o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c60rl5vwpk02o#0</guid>
+            <pubDate>Tue, 13 Oct 2026 15:52:15 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/7572/live/20ee0d90-c702-11f1-9a39-31b474234113.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Missiles intercepted near Riyadh after Saudi coalition hits Yemen fuel depot]]></title>
+            <description><![CDATA[The Saudi-led coalition fighting in Yemen struck a fuel depot near the Houthi-controlled capital, Sanaa.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/crx2d60y1py3o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/crx2d60y1py3o#0</guid>
+            <pubDate>Wed, 14 Oct 2026 04:20:17 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/eff9/live/16b445b0-c720-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Bank of America hit with $1.2bn fine for money laundering failings]]></title>
+            <description><![CDATA[The bank inadequately flagged transactions linked to potential Chinese money laundering networks, the Treasury said.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cm3wvxy6n3z8o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cm3wvxy6n3z8o#0</guid>
+            <pubDate>Wed, 14 Oct 2026 02:05:32 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/b893/live/c1765210-c764-11f1-b06d-fb50486dda65.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Trump ousts Kimberly Guilfoyle as US ambassador to Greece after corruption allegations]]></title>
+            <description><![CDATA[Guilfoyle said the allegations of improper conduct were false and that being ambassador was the "honour of a lifetime".]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cr5ynplvpg7lo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cr5ynplvpg7lo#0</guid>
+            <pubDate>Tue, 13 Oct 2026 19:23:28 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/8f6d/live/ecd9e6d0-c73a-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Russian strikes hit key power plant in Kyiv, Zelensky says]]></title>
+            <description><![CDATA[The Ukrainian president says the ballistic missile strikes came with "no early warning from our partners".]]></description>
+            <link>https://www.bbc.co.uk/news/articles/ck20r9qpw505o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/ck20r9qpw505o#1</guid>
+            <pubDate>Wed, 14 Oct 2026 04:36:06 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/10cd/live/79669050-c74d-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Ex-gang boss sentenced to 40 years for orchestrating Tupac Shakur's murder]]></title>
+            <description><![CDATA[Davis was found guilty last month over his role in the late rap superstar's death in a drive-by shooting in 1996. ]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c60rln2jvv2zo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c60rln2jvv2zo#1</guid>
+            <pubDate>Tue, 13 Oct 2026 19:51:14 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/37f6/live/8c0f8020-c73b-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Zimbabwean author denies using AI to write award-winning story]]></title>
+            <description><![CDATA[Simbarashe Kundizeza was responding to an accusation that has caused an uproar on social media.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cm4g1rekpgnjo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cm4g1rekpgnjo#1</guid>
+            <pubDate>Tue, 13 Oct 2026 23:31:10 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/2e42/live/dc1ac240-c723-11f1-9a39-31b474234113.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Lena Dunham's Girls to return for limited HBO run]]></title>
+            <description><![CDATA[Ten years after the series finale, the "Girls" are getting back together to explore the "milestone of turning forty", HBO says.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c9m26xp4zp8jo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c9m26xp4zp8jo#1</guid>
+            <pubDate>Wed, 14 Oct 2026 02:09:30 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/243d/live/cb0a4af0-c770-11f1-ab87-2bb7c0d2443c.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Russia arrests Japanese journalist on alleged espionage]]></title>
+            <description><![CDATA[The Hokkaido Shimbun journalist is accused of collecting information on Moscow's defence capabilities for Tokyo.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cwp9g1el7x9zo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cwp9g1el7x9zo#1</guid>
+            <pubDate>Wed, 14 Oct 2026 04:10:49 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/5c43/live/65eee660-c781-11f1-b999-873e5cdc91d4.png"/>
+        </item>
+        <item>
+            <title><![CDATA[Cornell bans all fraternity parties over gang sex assault allegations]]></title>
+            <description><![CDATA[The school has faced an uproar over how it handled assault allegations brought by a woman known as Jane Doe. ]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cw8dzg094zd9o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cw8dzg094zd9o#1</guid>
+            <pubDate>Tue, 13 Oct 2026 18:25:28 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/0bfb/live/6e2d8910-c738-11f1-9a39-31b474234113.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Horrified witnesses recount fatal rollercoaster incident at Six Flags]]></title>
+            <description><![CDATA[Police say preliminary information suggests the man who died at the Georgia amusement park fell from a ride.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c6n4ejx8x1z7o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c6n4ejx8x1z7o#1</guid>
+            <pubDate>Tue, 13 Oct 2026 17:10:50 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/eb02/live/12f052c0-c6c6-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA['I'd talk to the TV': The paid companions bringing warmth to China's lonely]]></title>
+            <description><![CDATA[As loneliness grows in China, a new industry is emerging to provide companionship and support.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cm5ynwpzkgk1o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cm5ynwpzkgk1o#2</guid>
+            <pubDate>Tue, 13 Oct 2026 22:02:09 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/b864/live/f45a9340-c74a-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Who's to blame for the toxic smog choking South East Asia?  ]]></title>
+            <description><![CDATA[Anger is mounting at the companies accused of burning land in Indonesia and the authorities who have failed to stop them.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/ckreyq9re0n0o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/ckreyq9re0n0o#2</guid>
+            <pubDate>Tue, 13 Oct 2026 22:01:43 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/ae98/live/38412da0-c776-11f1-8ea6-d52df4b01e11.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Pakistan has locked down Imran Khan's stronghold - but it could backfire]]></title>
+            <description><![CDATA[Some fear the government's standoff with the former PM's supporters could bring more instability, not less.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/crgqwv4vl24jo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/crgqwv4vl24jo#2</guid>
+            <pubDate>Tue, 13 Oct 2026 22:07:40 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/4202/live/342a9360-c707-11f1-9783-ed95709f9dec.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[What we know about the man who died falling from a Six Flags rollercoaster]]></title>
+            <description><![CDATA[Hassan Jihad Ibn Kariem died on Monday after police say he was ejected from a ride at a Six Flags amusement park in Georgia. ]]></description>
+            <link>https://www.bbc.co.uk/news/articles/cke8r4nmy36qo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/cke8r4nmy36qo#2</guid>
+            <pubDate>Wed, 14 Oct 2026 00:59:16 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/acc2/live/919d9da0-c746-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Is Zelensky right to say data centre strikes have taken down Russian bots?]]></title>
+            <description><![CDATA[Experts say there is no evidence that Russian trolls have been affected by Ukraine’s Yandex attacks.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c9y7l0pm8jkko?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c9y7l0pm8jkko#2</guid>
+            <pubDate>Tue, 13 Oct 2026 13:27:31 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/f908/live/67b69200-c708-11f1-bc2e-018d645d8d21.png"/>
+        </item>
+        <item>
+            <title><![CDATA[Watch: Witnesses describe 'traumatic' moment man fell out of Six Flags rollercoaster]]></title>
+            <description><![CDATA[One person has died and others were injured after an incident at a US amusement park.]]></description>
+            <link>https://www.bbc.co.uk/news/videos/cqy8le2mrd0po?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/videos/cqy8le2mrd0po#3</guid>
+            <pubDate>Tue, 13 Oct 2026 23:42:15 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/f34b/live/ee29dc10-c75e-11f1-a64c-550be9e3c66b.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Why the lonely in China are hiring 'temporary children']]></title>
+            <description><![CDATA[A new industry being dubbed the “loneliness economy” has emerged in China, with people hiring themselves out as companions to help the elderly.]]></description>
+            <link>https://www.bbc.co.uk/news/videos/cm8xkxn8lqkeo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/videos/cm8xkxn8lqkeo#3</guid>
+            <pubDate>Tue, 13 Oct 2026 22:00:20 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/9a9d/live/c0c4d690-be07-11f1-babe-4199b0e7ccea.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Inside Katie Zacharia's very brief White House briefing]]></title>
+            <description><![CDATA[The BBC's Sarah Smith was in the room and describes Zacharia's performance and the moment she broke news about Kimberly Guilfoyle being asked to resign.]]></description>
+            <link>https://www.bbc.co.uk/news/videos/cxm235y4l54lo?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/videos/cxm235y4l54lo#3</guid>
+            <pubDate>Tue, 13 Oct 2026 17:04:37 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/4614/live/b81d5210-c726-11f1-9a39-31b474234113.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA['If we don't scream, they won't listen to us': Student protesters speak to BBC in Paris]]></title>
+            <description><![CDATA[Student protesters in France have told the BBC's James Waterhouse that they will continue to take action until change has been made. The protests have now entered their fourth week. ]]></description>
+            <link>https://www.bbc.co.uk/news/videos/ckg5jqg1npd7o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/videos/ckg5jqg1npd7o#3</guid>
+            <pubDate>Tue, 13 Oct 2026 18:23:22 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/91da/live/5c9062c0-c730-11f1-9a39-31b474234113.jpg"/>
+        </item>
+    </channel>
+</rss>

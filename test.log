@@ -1,0 +1,129 @@
+== Building the tests
+== Core tests
+Reference made with Python 3.13.15 at 2026-10-14 05:17:59 +0000
+Sources downloaded for the reference: 14 of 14
+Scores, Swift/Python: WAR 35/35  DIS 89/89  CYB 52/52  BIO 41/41  GTI 55/55
+
+PASS  regex      1 passed, 0 failed
+PASS  patterns   180 passed, 0 failed
+PASS  feeds      26 passed, 0 failed
+PASS  constants  48 passed, 0 failed
+PASS  numbers    133 passed, 0 failed
+PASS  text       548 passed, 0 failed
+PASS  dates      17 passed, 0 failed
+PASS  condense   2385 passed, 0 failed
+PASS  severity   1383 passed, 0 failed
+PASS  sources    1 passed, 0 failed
+PASS  parse      2018 passed, 0 failed
+PASS  pipeline   24 passed, 0 failed
+PASS  engine     16 passed, 0 failed
+
+All core tests passed.
+== Screensaver check
+PASS bundle loads 
+     com.kuydigital.ThreatMonitor version 1.1.0, minimum macOS 12.0
+PASS principal class ThreatMonitorView is a ScreenSaverView
+PASS thumbnails present
+PASS creates a full-screen view
+PASS no options sheet
+     animation interval 0.100 s
+PASS first frame (before any data)
+live status:
+{
+  "baseline" : 1,
+  "cats" : {
+    "WAR" : {
+      "prev" : null,
+      "score" : 35,
+      "headlines" : [
+        "Iran said shoring up defenses at nuclear sites, warning it could invade neighbors if war resumes [The Times of Israel]",
+        "Russian strikes hit key power plant in Kyiv, Zelensky says [BBC]",
+        "Report: Chinese firm supplies Houthis with advanced ballistic missile parts [www.israelhayom.com]"
+      ],
+      "stale" : false
+    },
+    "BIO" : {
+      "prev" : null,
+      "score" : 41,
+      "headlines" : [
+        "EBOLA Infections EXPLODE to more than 9,000 cases in Congo as containment efforts falter [KTLA]",
+        "DR Congo confirms 9,066 Ebola cases, 4,381 deaths [Qazinform]",
+        "DR Congo's Ebola cases top 9,000 as vaccine trial nears launch [People's Daily Online]"
+      ],
+      "stale" : false
+    },
+    "CYB" : {
+      "prev" : null,
+      "score" : 52,
+      "headlines" : [
+        "Cyberattack on French supermarket fridges sparks investigation [Latest news from Azerbaijan]",
+        "Eastern States’ Grocers Shut Online Systems After Cyberattack [Insurance Journal]",
+        "Ransomware Gangs Embrace Physical Threats, Family Stalking? [Dark Reading]"
+      ],
+      "stale" : false
+    },
+    "DIS" : {
+      "prev" : null,
+      "score" : 89,
+      "headlines" : [
+        "Red notification for tropical cyclone TRUDY-26 [GDACS]",
+        "Drought is on going in Austria, Bosnia & Herzegovina and 27 more countries [GDACS]",
+        "Volcanic eruption is on going for Kanlaon in Philippines [GDACS]"
+      ],
+      "stale" : false
+    }
+  },
+  "dataDir" : "\/Users\/runner\/Library\/Application Support\/ThreatMonitor",
+  "failStreak" : 0,
+  "gti" : 55,
+  "lastError" : null,
+  "attempts" : 1,
+  "lastSync" : 1791955105.5969779,
+  "syncing" : false,
+  "version" : "3.4"
+}
+PASS a live update finished within 2 minutes
+PASS live scores for 4 of 4 categories
+PASS live Global Threat Index
+PASS saved the values for an instant start
+PASS saved the calibration
+PASS draws the rotation
+PASS draws live MAIN (1440x900)
+PASS draws live WAR (1440x900)
+PASS draws live DIS (1440x900)
+PASS draws live CYB (1440x900)
+PASS draws live BIO (1440x900)
+PASS draws live LOADING (1440x900)
+PASS draws live MINI (1440x900)
+screensaver.log:
+2026-10-14 05:18:24 [INFO] Threat Monitor 3.4 screensaver starting (data folder /Users/runner/Library/Application Support/ThreatMonitor)
+2026-10-14 05:18:25 [INFO] WAR -> 35  (BBC 0.87x, Al Jazeera 0.90x, NPR 1.20x)
+2026-10-14 05:18:25 [INFO] DIS -> 89  (197 current alerts)
+2026-10-14 05:18:25 [INFO] CYB -> 52  (BBC 4.00x, NPR 0.00x, CISA 1.17x)
+2026-10-14 05:18:25 [INFO] BIO -> 41  (BBC 0.68x, NPR 2.00x, WHO 1.00x)
+
+PASS draws demo MAIN (1440x900)
+PASS draws demo WAR (1440x900)
+PASS draws demo DIS (1440x900)
+PASS draws demo CYB (1440x900)
+PASS draws demo BIO (1440x900)
+PASS draws demo LOADING (1440x900)
+PASS draws demo MINI (1440x900)
+PASS draws size_1920x1080_main.png
+PASS draws size_1920x1080_drifting.png
+PASS draws size_1024x768_main.png
+PASS draws size_1024x768_drifting.png
+PASS draws size_3440x1440_main.png
+PASS draws size_3440x1440_drifting.png
+PASS draws size_2560x1664_main.png
+PASS draws size_2560x1664_drifting.png
+PASS draws size_800x1280_main.png
+PASS draws size_800x1280_drifting.png
+PASS creates a preview view
+PASS draws preview_296x184.png
+PASS creates a preview view
+PASS draws preview_480x300.png
+PASS MAIN frame at 2560x1440 takes 2.8 ms
+PASS BIO frame at 2560x1440 takes 2.5 ms
+
+All screensaver checks passed.
