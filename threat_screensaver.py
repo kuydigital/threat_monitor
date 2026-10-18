@@ -1,6 +1,6 @@
-# THREAT MONITOR - Windows 10/11 screensaver
+# THREAT MONITOR - screensaver for Windows 10/11 and Linux (Raspberry Pi OS)
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
-# Revised: Friday, October 9, 2026
+# Revised: Monday, October 19, 2026
 #
 # Wraps threat_monitor.py (same data, scoring and screens) as a .scr file.
 # Build it on Windows with build_screensaver.bat; see README.txt. Uses
@@ -10,7 +10,9 @@
 #   /s          show it full screen (all monitors)
 #   /p <hwnd>   draw the small preview inside Screen Saver Settings
 #   /c[:hwnd]   the "Settings" button          (no argument = same as /c)
-# For testing outside Windows:  python threat_screensaver.py /s --size 1280x720
+# Linux: linux/threat-monitor-screensaver starts "/s --log" when the desktop
+# is idle (full screen on the main monitor; see linux/install.sh).
+# For testing in a window:  python threat_screensaver.py /s --size 1280x720
 # -----------------------------------------------------------------------------
 
 import math
@@ -189,8 +191,10 @@ def run_show(test_size=None, max_seconds=None, frame_hook=None):
     import pygame as pg
 
     vs = virtual_screen()
-    if vs is None:                                 # not Windows: one test window
-        size = test_size or (1280, 720)
+    full = vs is None and test_size is None        # Linux: full screen on the main monitor
+    if vs is None:
+        pg.display.init()
+        size = test_size or pg.display.get_desktop_sizes()[0]
         vs = (0, 0) + tuple(size)
         monitors = [vs]
     else:
@@ -199,7 +203,7 @@ def run_show(test_size=None, max_seconds=None, frame_hook=None):
     os.environ["SDL_VIDEO_WINDOW_POS"] = f"{vx},{vy}"
 
     pg.display.init()
-    screen = pg.display.set_mode((vw, vh), pg.NOFRAME)
+    screen = pg.display.set_mode((vw, vh), pg.FULLSCREEN if full else pg.NOFRAME)
     pg.display.set_caption("Threat Monitor")
     pg.mouse.set_visible(False)
     make_topmost(pg, vx, vy, vw, vh)
@@ -340,8 +344,9 @@ def run_selftest():
 def main():
     if "--selftest" in sys.argv[1:]:
         sys.exit(run_selftest())
-    mode, hwnd, test_size = parse_args(sys.argv)
-    if getattr(sys, "frozen", False) or IS_WINDOWS:
+    log_to_file = "--log" in sys.argv[1:]          # Linux: started by the idle watcher, no console
+    mode, hwnd, test_size = parse_args([a for a in sys.argv if a != "--log"])
+    if getattr(sys, "frozen", False) or IS_WINDOWS or log_to_file:
         setup_log()
     tm.log("INFO", f"screensaver start: mode={mode} hwnd={hwnd}")
     try:

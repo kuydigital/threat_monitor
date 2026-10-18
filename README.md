@@ -5,8 +5,9 @@ Created and maintained by **Oliver Kuy** ([@kuydigital](https://github.com/kuydi
 A small dashboard that turns public news and alert feeds into a **Global Threat
 Index** plus four scores: **WAR**, **DIS** (natural disasters), **CYB** (cyber)
 and **BIO** (outbreaks), with the latest headline for each. It runs as a
-**Windows 10/11 screensaver**, a **macOS screensaver**, on a Raspberry Pi with a
-tiny 320×240 screen, or in a window on any desktop.
+**Windows 10/11 screensaver**, a **macOS screensaver**, a **Raspberry Pi OS / Linux
+screensaver**, on a Raspberry Pi with a tiny 320×240 screen, or in a window on
+any desktop.
 
 ![Threat Monitor screens (sample data)](docs/screens.png)
 
@@ -63,6 +64,45 @@ sources, scoring and screens as the Python version; its tests check that both
 give identical results on the same news. **Building it yourself:** run
 `mac/build.sh` on a Mac with Xcode or the Command Line Tools
 (`xcode-select --install`), then double-click `mac/build/Threat Monitor.saver`.
+
+## Raspberry Pi OS / Linux screensaver
+
+For Raspberry Pi OS with a desktop (and other Debian-based Linux). In a
+terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kuydigital/threat_monitor/main/linux/install.sh | sudo bash
+```
+
+Or from a copy of this repository: `sudo linux/install.sh`.
+
+The installer:
+- adds what it needs (`python3-pygame`, `python3-requests`, `xprintidle`);
+- puts the Threat Monitor in `/opt/threat-monitor`;
+- checks that every screen draws correctly;
+- starts it at every desktop login.
+
+After 5 idle minutes the Threat Monitor appears full screen, and any key, click
+or mouse move closes it. After 60 idle minutes the screen switches off. To try
+it straight away, run `threat-monitor-screensaver preview` from a terminal on
+the desktop.
+
+- **Settings:** change the minutes in `/etc/threat-monitor-screensaver.conf`.
+  Changes apply at the next login.
+- **Running it again** updates it and keeps your settings.
+- **To remove it:** run `sudo /opt/threat-monitor/uninstall.sh`.
+
+**How it behaves:**
+- It never appears over a full-screen app, such as a film, or the Threat
+  Monitor already running full screen on a Pi's own little screen.
+- It skips VNC virtual desktops unless you set `INCLUDE_VNC=yes`.
+- Like the other screensavers, it doesn't dim at night.
+
+**Where things are kept:** saved scores and the log go in
+`~/.local/share/threat-monitor`.
+
+**Desktops:** it's tested on the X11 desktop (LXDE / openbox). On Wayland
+(labwc / wayfire) it uses `swayidle`.
 
 ## Raspberry Pi / Linux / macOS (Python)
 
@@ -122,6 +162,8 @@ Headlines belong to their publishers and are shown with their source.
 - **Pi / Linux:** `threat_monitor.log` next to the script records every update
   and any source that failed. `python3 threat_monitor.py --check` shows what
   each source returned.
+- **Linux screensaver:** the log is `~/.local/share/threat-monitor/screensaver.log`;
+  start and stop messages are in `journalctl -t threat-monitor-screensaver`.
 
 ## Publishing a new release (maintainers)
 

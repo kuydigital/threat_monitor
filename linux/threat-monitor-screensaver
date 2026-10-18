@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Threat Monitor screensaver for Linux desktops (Raspberry Pi OS and other Debian-based systems).
+# Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
+#
+# Starts threat_screensaver.py full screen when the desktop has been idle; it closes itself on any
+# key press, click or mouse move. Installed by linux/install.sh.
+#
+#   threat-monitor-screensaver session   started by the desktop at login (/etc/xdg/autostart)
+#   threat-monitor-screensaver preview   show it now
+#   threat-monitor-screensaver start|stop   (used by swayidle on Wayland)
+#
+# Settings: /etc/threat-monitor-screensaver.conf, overridden by ~/.config/threat-monitor-screensaver.conf
+set -u
+
+APP_DIR=/opt/threat-monitor
+START_AFTER_MIN=5            # minutes idle before it appears
+SCREEN_OFF_AFTER_MIN=60      # minutes idle before the screen turns off (0 = never)
+INCLUDE_VNC=no               # also run on VNC virtual desktops (nobody usually watches those)
+for conf in /etc/threat-monitor-screensaver.conf "$HOME/.config/threat-monitor-screensaver.conf"; do
+    [ -r "$conf" ] && . "$conf"
+done
+
+# Its own data folder: calibration, last values and screensaver.log
+export THREAT_MONITOR_DATA="$HOME/.local/share/threat-monitor"
+STATE="${XDG_RUNTIME_DIR:-/tmp}/threat-monitor-screensaver-${DISPLAY:-${WAYLAND_DISPLAY:-wl}}"
+PIDFILE="$STATE.pid"
+
+log() { logger -t threat-monitor-screensaver -- "$*"; }
+
+running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
+
+start() {
+    running && return
+    mkdir -p "$THREAT_MONITOR_DATA"
+    # From here this program decides when the screen blanks; X's own blanking would cut in after 10 minutes
+    [ -z "${WAYLAND_DISPLAY:-}" ] && xset s off -dpms 2>/dev/null
+    python3 "$APP_DIR/threat_screensaver.py" /s --log >/dev/null 2>&1 &
+    echo $! > "$PIDFILE"
+    log "started on ${DISPLAY:-wayland}"
+}
+
+stop() {
+    running || { rm -f "$PIDFILE"; return; }
+    local pid
+    pid=$(cat "$PIDFILE")
+    kill -TERM "$pid" 2>/dev/null
+    for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.3; done
+    kill -KILL "$pid" 2>/dev/null
+    rm -f "$PIDFILE"
+}
+
+idle_ms() { xprintidle 2>/dev/null || echo 0; }
+
+# Something full screen in front (a film, a game, the Threat Monitor itself on a Pi's own screen)
+# keeps the screensaver away, and then the screen is left exactly as that app wants it
+fullscreen_app() {
+    local win
+    win=$(xprop -root _NET_ACTIVE_WINDOW 2>/dev/null | awk '{print $NF}')
+    [ -n "$win" ] && [ "$win" != "0x0" ] &&
+        xprop -id "$win" _NET_WM_STATE 2>/dev/null | grep -q _NET_WM_STATE_FULLSCREEN
+}
+
+# X11: watch the idle time. The screensaver closes itself on input; this decides when it starts
+# and when the screen switches off.
+watch_x11() {
+    local start_ms=$((START_AFTER_MIN * 60000)) off_ms=$((SCREEN_OFF_AFTER_MIN * 60000))
+    local idle last=0 screen_off=no retry_at=0
+    while :; do
+        idle=$(idle_ms)
+        if running; then
+            if [ "$off_ms" -gt 0 ] && [ "$idle" -ge "$off_ms" ]; then
+                stop                                                # no point drawing a dark screen
+                xset dpms force off 2>/dev/null; screen_off=yes
+            fi
+        elif [ "$idle" -lt "$last" ]; then                          # someone is back
+            # Back from a switched-off screen: forcing it off re-enabled X's own blanking
+            [ "$screen_off" = yes ] && xset s off -dpms 2>/dev/null
+            screen_off=no retry_at=0
+        elif [ "$screen_off" = no ] && [ "$idle" -ge "$start_ms" ] && [ "$SECONDS" -ge "$retry_at" ] &&
+             ! fullscreen_app; then
+            if [ "$off_ms" -gt 0 ] && [ "$idle" -ge "$off_ms" ]; then
+                xset s off -dpms 2>/dev/null                        # already idle that long at login
+                xset dpms force off 2>/dev/null; screen_off=yes
+            else
+                start
+                retry_at=$((SECONDS + 60))     # if it closes without any input, wait before trying again
+            fi
+        fi
+        last=$idle
+        sleep 1
+    done
+}
+
+session() {
+    if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+        command -v swayidle >/dev/null || { log "swayidle missing, not running"; exit 1; }
+        local args=(timeout $((START_AFTER_MIN * 60)) "$0 start" resume "$0 stop")
+        [ "$SCREEN_OFF_AFTER_MIN" -gt 0 ] && command -v wlopm >/dev/null &&
+            args+=(timeout $((SCREEN_OFF_AFTER_MIN * 60)) "$0 stop; wlopm --off '*'" resume "wlopm --on '*'")
+        exec swayidle -w "${args[@]}"
+    fi
+    [ -n "${DISPLAY:-}" ] || exit 0
+    exec 9>"$STATE.lock"                                            # one watcher per display
+    flock -n 9 || exit 0
+    if [ "$INCLUDE_VNC" != yes ] && pgrep -f "Xvnc.* ${DISPLAY%.*}( |$)" >/dev/null; then
+        log "skipping VNC desktop $DISPLAY (INCLUDE_VNC=no)"
+        exit 0
+    fi
+    trap 'stop; exit 0' TERM INT
+    watch_x11
+}
+
+case "${1:-}" in
+    session) session ;;
+    preview) mkdir -p "$THREAT_MONITOR_DATA"; exec python3 "$APP_DIR/threat_screensaver.py" /s --log ;;
+    start) start ;;
+    stop) stop ;;
+    *) echo "usage: $(basename "$0") session|preview|start|stop" >&2; exit 2 ;;
+esac

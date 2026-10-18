@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Threat Monitor screensaver
+Comment=Shows the Threat Monitor when the desktop is idle
+Exec=/usr/local/bin/threat-monitor-screensaver session
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

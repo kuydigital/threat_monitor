@@ -11,7 +11,8 @@
 #        F switch between window and full screen
 # Night: the screen dims from 12 midnight to 6 AM (Pi's local time); see
 #        NIGHT_HOURS and NIGHT_BRIGHTNESS below. The screensavers never dim.
-# Windows screensaver: see threat_screensaver.py (imports this file).
+# Windows and Linux screensavers: see threat_screensaver.py (imports this file)
+#        and linux/install.sh.
 # macOS screensaver: a native Swift port in mac/ (same sources and scoring;
 #        mac/Tests checks it gives the same results as this file).
 # Works with pygame or pygame-ce (pip install pygame-ce on newer Python versions).
