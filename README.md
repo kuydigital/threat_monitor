@@ -17,10 +17,17 @@ any desktop.
 |---|---|---|
 | **Windows screensaver** | Windows 10 and 11 | [![Download the Windows screensaver](https://img.shields.io/badge/Download-Windows%20screensaver-0078D4?style=for-the-badge)](https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-Windows.zip) |
 | **macOS screensaver** | macOS 12 Monterey or later, Apple silicon and Intel | [![Download the macOS screensaver](https://img.shields.io/badge/Download-macOS%20screensaver-1D1D1F?style=for-the-badge)](https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-macOS.zip) |
+| **Raspberry Pi OS screensaver** | Raspberry Pi OS with desktop (and other Debian-based Linux) | [![Get the Raspberry Pi OS installer](https://img.shields.io/badge/Install-Raspberry%20Pi%20OS%20screensaver-C51A4A?style=for-the-badge)](https://raw.githubusercontent.com/kuydigital/threat_monitor/main/linux/install.sh) |
 
-Both are free and need nothing else installed. On the
-[Releases](https://github.com/kuydigital/threat_monitor/releases) page they are
-labeled **Windows screensaver (ZIP)** and **macOS screensaver (ZIP)**.
+All three are free. The Windows and macOS screensavers need nothing else
+installed; on the [Releases](https://github.com/kuydigital/threat_monitor/releases)
+page they are labeled **Windows screensaver (ZIP)** and **macOS screensaver (ZIP)**.
+The Raspberry Pi OS installer is one command (it adds what it needs; see
+[below](#raspberry-pi-os--linux-screensaver)):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kuydigital/threat_monitor/main/linux/install.sh | sudo bash
+```
 
 ## Windows screensaver
 
