@@ -122,6 +122,7 @@ func checkPattern(_ label: String, _ rx: Rx, _ ref: Any?) {
 checkPattern("label", Text.labelRx, cp["label"])
 checkPattern("bracket", Text.bracketRx, cp["bracket"])
 checkPattern("lead", Text.leadAttrRx, cp["lead"])
+checkPattern("codes", Text.codesRx, cp["codes"])
 checkPattern("filler", Text.fillerRx, cp["filler"])
 checkPattern("clause", Text.clauseRx, cp["clause"])
 checkPattern("dash", Text.dashRx, cp["dash"])

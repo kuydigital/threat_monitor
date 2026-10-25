@@ -104,6 +104,7 @@ g["condense_patterns"] = {
     "tails": [[r.pattern, flags(r)] for r in tm._TAIL_RES],
     "lead": [tm._LEAD_ATTR_RE.pattern, flags(tm._LEAD_ATTR_RE)],
     "abbrev": [[r.pattern, re.sub(r"\\(\d)", r"$\1", repl), flags(r)] for r, repl in tm._ABBREVIATIONS],
+    "codes": [tm._CODES_RE.pattern, flags(tm._CODES_RE)],
     "filler": [tm._FILLER_RE.pattern, flags(tm._FILLER_RE)],
     "clause": [tm._CLAUSE_RE.pattern, flags(tm._CLAUSE_RE)],
     "dash": [tm._DASH_RE.pattern, flags(tm._DASH_RE)],
@@ -166,6 +167,7 @@ CRAFTED_TITLES = [
     "A very long headline with lots of words that keeps going and going without any natural place to cut it at all because it has no commas or clauses and it never ends",
     "EBOLA Infections EXPLODE to more than 9,000 cases in Congo as containment efforts falter",
     "Is the \u201cAutism Epidemic\u201d Real, or Are We Better at Finding It? A Leading Pediatric Developmental Expert Weighs In on New JAMA Study | Newswise",
+    "Actively exploited: CVE-2019-8394 Zoho ManageEngine ServiceDesk Plus (SDP) File Upload Vulnerability",
     "Actively exploited: CVE-2026-88779 Citrix NetScaler Improper Restriction of Operations within the Bounds of a Memory Buffer Vulnerability",
     "Sen. Warren demands answers from RFK Jr. over 'calamitous' response to cyclosporiasis outbreak in the U.S. Midwest this summer",
     "Works on paper by Germany's most incisive post-war artists: Richter, Kiefer, Polke, Baselitz and Penck",
@@ -207,7 +209,7 @@ gdacs_raw = []
 if status.get("DIS:GDACS") == "ok":
     try:
         root = ET.fromstring(open(fixture("DIS:GDACS"), "rb").read())
-        gdacs_raw = [tm.strip_html(i.findtext("title")).split(". ")[0] for i in root.iter("item")]
+        gdacs_raw = [tm.strip_html(i.findtext("title")) for i in root.iter("item")]
     except ET.ParseError:
         pass
 gdacs_raw += [
@@ -218,6 +220,19 @@ gdacs_raw += [
     "Germany, Denmark, Spain, France, Croatia, Hungary, Ireland, Italy, Liechtenstein, Luxembourg, Moldova, "
     "Montenegro, Netherlands, Norway, Poland, Romania, Serbia, Russia, Sweden, Slovenia, Slovakia, San Marino, Ukraine,",
     "Drought is on going in Brazil, Argentina, Paraguay",
+    "Red earthquake (Magnitude 7M, Depth:18km) in China 22/10/2026 14:33 UTC, 10 thousand (in MMI>=VII).",
+    "Green earthquake (Magnitude 5.8M, Depth:10km) in Vanuatu 24/10/2026 05:23 UTC, 2 thousand in MMI>=III.",
+    "Green earthquake (Magnitude 5.7M, Depth:10km) in Vanuatu Islands 24/10/2026 04:05 UTC, [unknown].",
+    "Green earthquake (Magnitude 6.5M, Depth:492.376km) in Bonin Islands, Japan Region 25/10/2026 02:09 UTC, "
+    "No people affected in 100km.",
+    "Green notification for tropical cyclone THREE-C-26. Population affected by Category 1 (120 km/h) wind speeds "
+    "or higher is 0  (0 in Tropical Storm).",
+    "Green notification for tropical cyclone JOSEPHINE-26. Population affected by Category 1 (120 km/h) wind speeds "
+    "or higher is 0  (7.514 million in Tropical Storm).",
+    "Red notification for tropical cyclone CHAMPI-26. Population affected by Category 1 (120 km/h) wind speeds "
+    "or higher is 0.291 million .",
+    "Orange notification for tropical cyclone KOGUMA-26. Population affected by Category 1 (120 km/h) wind speeds "
+    "or higher is 1,250 (2.5 thousand in Tropical Storm).",
 ]
 g["gdacs_titles"] = [[t, tm.tidy_gdacs_title(t)] for t in dict.fromkeys(gdacs_raw)]
 

@@ -181,7 +181,7 @@ enum Parse {
                 continue
             }
             let full = HTMLText.strip(raw["title"])
-            let title = Text.tidyGdacsTitle(full.components(separatedBy: ". ").first ?? full)
+            let title = Text.tidyGdacsTitle(full)
             let date = Dates.rfc822(raw[ns + "datemodified"]) ?? Dates.rfc822(raw["pubDate"]) ?? now
             out.append(Story(sev: sev, date: date, title: title, source: "GDACS"))
         }
@@ -201,8 +201,9 @@ enum Parse {
             if sev != 0 {
                 let ms = number(p["time"]) ?? 0
                 let t = (p["title"] as? String) ?? ""
+                let title = Text.usgsMagRx.sub(t.isEmpty ? "Earthquake" : t, "Magnitude $1 earthquake, ")
                 out.append(Story(sev: sev, date: Date(timeIntervalSince1970: ms / 1000),
-                                 title: t.isEmpty ? "Earthquake" : t, source: "USGS"))
+                                 title: title, source: "USGS"))
             }
         }
         return out

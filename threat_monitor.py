@@ -1,4 +1,4 @@
-# SYSTEM THREAT MONITOR  v3.6
+# SYSTEM THREAT MONITOR  v3.7
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
 # Revised: Wednesday, October 14, 2026, 1:40 PM (Philippine time)
 #
@@ -554,19 +554,55 @@ def score_from_ratio(ratio):
 
 MMI_WORDS = {"I": "unfelt", "II": "weak", "III": "weak", "IV": "light", "V": "moderate",
              "VI": "strong", "VII": "very strong", "VIII": "severe", "IX": "violent", "X": "extreme"}
+_UNITS = {"": 1, "thousand": 1e3, "million": 1e6}
+
+
+def people_number(text):
+    num, _, unit = text.partition(" ")
+    return float(num.replace(",", "")) * _UNITS.get(unit, 1)
+
+
+def people_count(text):
+    """'0.291 million' -> '291 thousand', '7.514 million' -> '7.5 million'."""
+    n = people_number(text)
+    if n >= 1e6:
+        return f"{n / 1e6:.1f}".removesuffix(".0") + " million"
+    if n >= 1e3:
+        return f"{round(n / 1e3)} thousand"
+    return str(int(n))
 
 
 def tidy_gdacs_title(title):
-    """'Green earthquake (Magnitude 5.9M, Depth:45.951km) in Indonesia 03/10/2026
-    22:55 UTC, 130 thousand in MMI V.' -> 'Green earthquake M5.9 in Indonesia,
-    130 thousand people in moderate shaking'"""
-    t = re.sub(r"\(Magnitude\s*([\d.]+)\s*M?[^)]*\)", r"M\1", title)
+    """Plain words for GDACS codes, e.g.
+    'Red earthquake (Magnitude 7M, Depth:18km) in China 22/10/2026 14:33 UTC, 10 thousand (in MMI>=VII).'
+      -> 'Red magnitude 7 earthquake in China, 10 thousand people in at least very strong shaking'
+    'Red notification for tropical cyclone CHAMPI-26. Population affected by Category 1 (120 km/h)
+    wind speeds or higher is 0.291 million .'
+      -> 'Red tropical cyclone Champi, 291 thousand people in winds over 120 km/h'"""
+    t, _, rest = title.partition(". ")
+    t = re.sub(r"\bearthquake \(Magnitude\s*([\d.]+)\s*M?[^)]*\)", r"magnitude \1 earthquake", t)
+    t = re.sub(r"\(Magnitude\s*([\d.]+)\s*M?[^)]*\)", r"magnitude \1", t)
     t = re.sub(r"\s+\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(:\d{2})?\s*UTC", "", t)
+    t = re.sub(r",?\s*\[unknown\]", "", t)                      # no population estimate yet
 
     def mmi(m):
         who = "few people" if m.group(1).lower().startswith("few") else f"{m.group(1)} people"
-        return f"{who} in {MMI_WORDS.get(m.group(2).upper(), 'MMI ' + m.group(2))} shaking"
-    t = re.sub(r"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+in MMI ([IVX]+)\b", mmi, t, flags=re.I)
+        word = MMI_WORDS.get(m.group(3).upper(), "level " + m.group(3))
+        return f"{who} in {'at least ' if m.group(2) else ''}{word} shaking"
+    t = re.sub(r"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+\(?in MMI\s*(>=)?\s*([IVX]+)\b\)?",
+               mmi, t, flags=re.I)
+    t = re.sub(r"\bNo people affected in (\d+)\s*km\b", r"no people within \1 km", t)
+    m = re.match(r"^(\w+) notification for tropical cyclone ([A-Z0-9-]+?)(?:-\d{2})?$", t)
+    if m:                                       # "IN-FA-26" -> "In-Fa" (the -26 is the year)
+        name = "-".join(p.capitalize() for p in m.group(2).split("-"))
+        t = f"{m.group(1)} tropical cyclone {name}"
+        hurricane = re.search(r"Category 1 \(120 km/h\) wind speeds or higher is (\d[\d.,]*(?: thousand| million)?)",
+                              rest)
+        storm = re.search(r"\((\d[\d.,]*(?: thousand| million)?) in Tropical Storm\)", rest)
+        if hurricane and people_number(hurricane.group(1)) > 0:
+            t += f", {people_count(hurricane.group(1))} people in winds over 120 km/h"
+        elif storm and people_number(storm.group(1)) > 0:
+            t += f", {people_count(storm.group(1))} people in tropical storm winds"
     # "Drought is on going in Austria, Belgium, ... Ukraine," (29 countries) ->
     # "Drought is on going in Austria, Belgium and 27 more countries"
     m = re.match(r"^(.*?\bin )([A-Z][^,]*(?:, [A-Z][^,]*){3,}),?\s*$", t)
@@ -592,7 +628,7 @@ def gdacs_stories(now):
             sev = GDACS_GREEN_BY_TYPE.get(etype, 0.5)
         else:
             continue
-        title = tidy_gdacs_title(strip_html(item.findtext("title")).split(". ")[0])
+        title = tidy_gdacs_title(strip_html(item.findtext("title")))
         date = (parse_date(item.findtext(GDACS_NS + "datemodified"))
                 or parse_date(item.findtext("pubDate")) or now)
         out.append(story(sev, date, title, "GDACS"))
@@ -614,7 +650,8 @@ def usgs_stories(now):
             sev += 2.0
         if sev:
             ts = datetime.fromtimestamp((p.get("time") or 0) / 1000, tz=timezone.utc)
-            out.append(story(sev, ts, p.get("title") or "Earthquake", "USGS"))
+            title = re.sub(r"^M ([\d.]+) - ", r"Magnitude \1 earthquake, ", p.get("title") or "Earthquake")
+            out.append(story(sev, ts, title, "USGS"))
     return out
 
 
@@ -666,9 +703,9 @@ _ABBREVIATIONS = [
     (r"(?i)\btelecommunications\b", "telecoms"),
     (r"(?i)\bgovernment\b", "govt"),
     (r"\bVulnerability\b", "flaw"),
-    (r"\bCVE-\d{4}-\d+:?\s*", ""),                     # CISA: the number means little on screen
 ]
 _ABBREVIATIONS = [(re.compile(p), r) for p, r in _ABBREVIATIONS]
+_CODES_RE = re.compile(r"\bCVE-\d{4}-\d+:?\s*|\s*\([A-Z]{2,6}\)")   # CISA: "CVE-2026-1234", "(XSS)"
 _FILLER_RE = re.compile(r"\b(a|an|the|reportedly|currently)\s+", re.I)
 _CLAUSE_RE = re.compile(          # where a trailing clause can be dropped
     r"(;\s"
@@ -709,7 +746,7 @@ def condense_steps(text):
             return True
         return False
 
-    t = text
+    t = _CODES_RE.sub("", text)                 # codes mean little on screen, so never shown
     emit(t)
     # 1. drop "LIVE:"-style labels, (brackets), and "..., officials say" attributions
     t = _BRACKET_RE.sub("", _LABEL_RE.sub("", t))
@@ -1609,7 +1646,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.6 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.7 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1735,7 +1772,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.6 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.7 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim
