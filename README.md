@@ -2,6 +2,8 @@
 
 Created and maintained by **Oliver Kuy** ([@kuydigital](https://github.com/kuydigital)).
 
+**Website:** [kuydigital.github.io/threat_monitor](https://kuydigital.github.io/threat_monitor/)
+
 A small dashboard that turns public news and alert feeds into a **Global Threat
 Index** plus four scores: **WAR**, **DIS** (natural disasters), **CYB** (cyber)
 and **BIO** (outbreaks), with the latest headline for each. It runs as a

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threat Monitor | Free Threat Screensaver for Windows, Mac &amp; Pi</title>
+<meta name="description" content="Free, open-source screensaver that turns live news and official alert feeds into a Global Threat Index for war, disasters, cyber attacks and outbreaks. For Windows, macOS and Raspberry Pi.">
+<link rel="canonical" href="https://kuydigital.github.io/threat_monitor/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Oliver Kuy">
+<meta name="theme-color" content="#0b0f17">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Threat Monitor">
+<meta property="og:title" content="Threat Monitor: Free Global Threat Screensaver">
+<meta property="og:description" content="Live news and alert feeds turned into one Global Threat Index for war, disasters, cyber and outbreaks. Free for Windows, macOS and Raspberry Pi.">
+<meta property="og:url" content="https://kuydigital.github.io/threat_monitor/">
+<meta property="og:image" content="https://kuydigital.github.io/threat_monitor/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Threat Monitor dashboard showing WAR, DIS, CYB and BIO scores">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Threat Monitor: Free Global Threat Screensaver">
+<meta name="twitter:description" content="Live news and alert feeds turned into one Global Threat Index. Free for Windows, macOS and Raspberry Pi.">
+<meta name="twitter:image" content="https://kuydigital.github.io/threat_monitor/og-image.png">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"SoftwareApplication","@id":"https://kuydigital.github.io/threat_monitor/#app","name":"Threat Monitor","alternateName":["Global Threat Monitor","Threat Monitor Screensaver"],"description":"A free, open-source screensaver and dashboard that turns public news and alert feeds into a Global Threat Index plus four scores: WAR, DIS (natural disasters), CYB (cyber) and BIO (outbreaks).","applicationCategory":"UtilitiesApplication","applicationSubCategory":"Screensaver","operatingSystem":"Windows 10, Windows 11, macOS 12 or later, Raspberry Pi OS, Debian Linux","softwareVersion":"1.3.0","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":["https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-Windows.zip","https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-macOS.zip"],"installUrl":"https://kuydigital.github.io/threat_monitor/#download","screenshot":"https://kuydigital.github.io/threat_monitor/screens-1984.webp","image":"https://kuydigital.github.io/threat_monitor/og-image.png","url":"https://kuydigital.github.io/threat_monitor/","codeRepository":"https://github.com/kuydigital/threat_monitor","author":{"@id":"https://kuydigital.github.io/threat_monitor/#oliver"}},
+{"@type":"Person","@id":"https://kuydigital.github.io/threat_monitor/#oliver","name":"Oliver Kuy","url":"https://github.com/kuydigital","sameAs":["https://github.com/kuydigital","https://web.facebook.com/kuydigital.expressafewwords"]},
+{"@type":"WebSite","@id":"https://kuydigital.github.io/threat_monitor/#site","name":"Threat Monitor","url":"https://kuydigital.github.io/threat_monitor/","inLanguage":"en"},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is Threat Monitor free?","acceptedAnswer":{"@type":"Answer","text":"Yes. All three versions (Windows, macOS and Raspberry Pi OS) are free and open source under the MIT License. There is no account, subscription or sign-up."}},
+{"@type":"Question","name":"Does the Global Threat Index predict danger?","acceptedAnswer":{"@type":"Answer","text":"No. It measures how much the news is reporting on each kind of threat compared with the usual level over the last 30 days. Treat it as a news-intensity indicator, not a forecast of real-world danger."}},
+{"@type":"Question","name":"Where does the data come from?","acceptedAnswer":{"@type":"Answer","text":"Public RSS feeds from BBC News, Al Jazeera, NPR and Google News, GDACS disaster alerts, the USGS earthquake feed, the CISA Known Exploited Vulnerabilities catalog and WHO Disease Outbreak News."}},
+{"@type":"Question","name":"Why does Windows say it protected my PC?","acceptedAnswer":{"@type":"Answer","text":"Windows shows that message for downloaded programs that are not signed by a company. Click More info, then Run anyway. The full source code is public on GitHub."}},
+{"@type":"Question","name":"Does it need Python or anything else installed?","acceptedAnswer":{"@type":"Answer","text":"No. The Windows and macOS screensavers are self-contained. The Raspberry Pi OS installer adds the few packages it needs automatically."}},
+{"@type":"Question","name":"Can I run it on a Raspberry Pi with a small screen?","acceptedAnswer":{"@type":"Answer","text":"Yes. It was designed to fit a 320x240 display and also runs full screen, in a window, or as a Raspberry Pi OS screensaver that appears after 5 idle minutes."}}
+]}
+]}
+</script>
+<style>
+:root{--bg:#0b0f17;--bg2:#111827;--panel:#0d1320;--line:#1f2937;--tx:#e2e8f0;--mut:#94a3b8;--cy:#38bdf8;--bl:#3d8bfd;--gr:#2ecc71;--ye:#f5c518;--or:#fb923c;--re:#f87171;--mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.6 var(--sans);-webkit-text-size-adjust:100%}
+a{color:var(--cy)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:12px;background:var(--cy);color:#000;padding:8px 12px;z-index:9}
+header{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px}
+.brand{display:flex;align-items:center;gap:10px;font:700 17px var(--mono);letter-spacing:.08em;color:var(--cy);text-decoration:none}
+.nav ul{display:flex;gap:4px;list-style:none;margin:0;padding:0}
+.nav ul a{display:block;padding:12px 10px;color:var(--mut);text-decoration:none;font-size:15px}
+.nav ul a:hover{color:var(--tx)}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:64px 0 56px}
+.eyebrow{font:600 13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--cy);margin:0 0 14px}
+h1{font-size:clamp(32px,4.6vw,52px);line-height:1.1;margin:0 0 18px;letter-spacing:-.02em}
+h1 span{color:var(--cy)}
+.lead{font-size:19px;color:#cbd5e1;margin:0 0 28px;max-width:34em}
+.ctas{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 20px;border-radius:10px;font:600 16px var(--sans);text-decoration:none;border:1px solid var(--line);color:var(--tx);background:var(--bg2)}
+.btn.pri{background:var(--cy);color:#04121c;border-color:var(--cy)}
+.btn:hover{filter:brightness(1.1)}
+.btn svg{width:20px;height:20px;flex:none}
+.note{font-size:14px;color:var(--mut);margin:16px 0 0}
+.dash{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;font-family:var(--mono);box-shadow:0 30px 60px -30px #000}
+.dash .top{display:flex;justify-content:space-between;color:var(--mut);font-size:15px;margin-bottom:14px}
+.dash .top b{color:var(--cy);letter-spacing:.1em;font-weight:600}
+.row{display:grid;grid-template-columns:44px 1fr 34px;gap:12px;align-items:center;margin:9px 0;font-size:19px}
+.bar{height:12px;border-radius:6px;background:#1e293b;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.gti{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;display:flex;justify-content:space-between;align-items:flex-end}
+.gti small{display:block;color:var(--mut);font-size:13px;letter-spacing:.08em}
+.gti strong{font-size:52px;line-height:1;color:var(--bl)}
+.pill{background:var(--bl);color:#05101f;padding:6px 12px;border-radius:8px;font-weight:700;letter-spacing:.06em}
+.scale{display:flex;gap:4px;margin-top:14px}.scale i{flex:1;height:5px;border-radius:3px}
+.cap{font:13px var(--mono);color:var(--mut);text-align:right;margin:8px 0 0}
+section{padding:72px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(26px,3.2vw,36px);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em}
+.sub{color:#cbd5e1;max-width:46em;margin:0 0 36px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:22px}
+.card h3{margin:0 0 8px;font-size:19px}
+.card p{margin:0;color:#cbd5e1;font-size:16px}
+.tag{font:700 15px var(--mono);letter-spacing:.1em;display:inline-block;margin-bottom:10px;padding-left:10px;border-left:4px solid}
+.shot{border-radius:12px;border:1px solid var(--line);background:#1b1f27}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 28px;font:600 14px var(--mono);text-align:center}
+.levels span{display:block;font-weight:400;font-size:13px}
+ol.steps{margin:12px 0 0;padding-left:20px;color:#cbd5e1;font-size:16px}
+ol.steps li{margin:6px 0}
+.card .btn{margin-top:18px;width:100%;justify-content:center}
+pre{position:relative;margin:14px 0 0;background:#05080e;border:1px solid var(--line);border-radius:8px;padding:14px 14px 14px 14px;overflow-x:auto;font:14px/1.5 var(--mono);color:#cbd5e1}
+.copy{margin-top:10px;min-height:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:600 14px var(--sans);cursor:pointer}
+.src{columns:2;gap:32px;color:#cbd5e1;padding-left:20px}
+.src li{margin:6px 0;break-inside:avoid}
+details{border:1px solid var(--line);border-radius:10px;background:var(--bg2);margin:10px 0}
+summary{cursor:pointer;padding:16px 20px;font-weight:600;list-style-position:outside;min-height:48px}
+details p{margin:0;padding:0 20px 18px;color:#cbd5e1}
+footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--mut);font-size:15px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px}
+.fig{margin:0}.w41{width:41%}.w22{width:22%}.w37{width:37%}.w52{width:52%}.cb{background:var(--bl)}.cg{background:var(--gr)}.cy{background:var(--ye)}
+.s1{background:#166534}.s2{background:var(--bl)}.s3{background:#854d0e}.s4{background:#9a3412}.s5{background:#991b1b}
+.t-war{border-color:var(--re);color:#fca5a5}.t-dis{border-color:var(--gr);color:#86efac}.t-cyb{border-color:var(--bl);color:#93c5fd}.t-bio{border-color:var(--ye);color:#fde68a}
+.mt32{margin-top:32px}.m0{margin:0}.levels{list-style:none;padding:0}.l1{background:#4ade80}.l2{background:#60a5fa}.l3{background:#facc15}.l4{background:#fb923c}.l5{background:#f87171}
+.levels li{padding:12px 4px;border-radius:8px;color:#05101f}
+@media (max-width:900px){.hero{grid-template-columns:1fr;padding:40px 0}.grid4{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr}.nav ul{display:none}}
+@media (max-width:560px){.grid4{grid-template-columns:1fr}.src{columns:1}.levels{grid-template-columns:repeat(5,1fr);font-size:11px}.levels span{font-size:11px}.btn{width:100%;justify-content:center}.row{font-size:17px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+ <nav class="wrap nav" aria-label="Main">
+  <a class="brand" href="./" aria-label="Threat Monitor home"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#111827"/><rect x="5" y="6" width="12" height="3" rx="1.5" fill="#3d8bfd"/><rect x="5" y="11" width="8" height="3" rx="1.5" fill="#2ecc71"/><rect x="5" y="16" width="11" height="3" rx="1.5" fill="#3d8bfd"/><rect x="5" y="21" width="17" height="3" rx="1.5" fill="#f5c518"/></svg>THREAT MONITOR</a>
+  <ul>
+   <li><a href="#what">What it shows</a></li>
+   <li><a href="#scores">How scores work</a></li>
+   <li><a href="#download">Download</a></li>
+   <li><a href="#faq">FAQ</a></li>
+   <li><a href="https://github.com/kuydigital/threat_monitor">GitHub</a></li>
+  </ul>
+ </nav>
+</header>
+
+<main id="main">
+<div class="wrap hero">
+ <div>
+  <p class="eyebrow">Free &middot; Open source &middot; v1.3.0</p>
+  <h1>The world's news, turned into one <span>Global Threat Index</span> on your screen</h1>
+  <p class="lead">Threat Monitor is a free screensaver for Windows, macOS and Raspberry Pi that reads live news and official alert feeds and scores four kinds of threat: war, natural disasters, cyber attacks and disease outbreaks. Glance up and you know how loud the world is today.</p>
+  <div class="ctas">
+   <a class="btn pri" href="https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-Windows.zip"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5.5 10.5 4.5v7H3zm0 13 7.5 1v-7H3zm8.5 1.2L21 21v-8.5h-9.5zm0-15.4v7.2H21V3z"/></svg>Download for Windows</a>
+   <a class="btn" href="https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-macOS.zip"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.9-.8-3.1-.8C6.8 7.2 5.2 8.2 4.4 9.7c-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.1.8c1.3 0 2.1-1.2 2.9-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-4.1zM14.1 5.5c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z"/></svg>Download for macOS</a>
+   <a class="btn" href="#raspberry-pi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M8 3c2 0 3.4 1.2 4 2.6C12.6 4.2 14 3 16 3c-.3 2-1.7 3.4-4 3.6C9.7 6.4 8.3 5 8 3z"/></svg>Raspberry Pi</a>
+  </div>
+  <p class="note">Windows 10 and 11 &middot; macOS 12 Monterey or later (Apple silicon and Intel) &middot; Raspberry Pi OS and Debian Linux. No account, no sign-up.</p>
+ </div>
+ <figure class="fig">
+  <div class="dash" role="img" aria-label="Sample Threat Monitor dashboard: WAR 41, DIS 22, CYB 37, BIO 52, Global Threat Index 40 percent, level Guarded">
+   <div class="top"><b>THREAT MONITOR</b><span>13:16</span></div>
+   <div class="row"><span>WAR</span><span class="bar"><i class="w41 cb"></i></span><span>41</span></div>
+   <div class="row"><span>DIS</span><span class="bar"><i class="w22 cg"></i></span><span>22</span></div>
+   <div class="row"><span>CYB</span><span class="bar"><i class="w37 cb"></i></span><span>37</span></div>
+   <div class="row"><span>BIO</span><span class="bar"><i class="w52 cy"></i></span><span>52</span></div>
+   <div class="gti"><div><small>GLOBAL THREAT INDEX</small><strong>40%</strong></div><span class="pill">GUARDED</span></div>
+   <div class="scale"><i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i></div>
+  </div>
+  <figcaption class="cap">Sample data shown</figcaption>
+ </figure>
+</div>
+
+<section id="what">
+ <div class="wrap">
+  <h2>Four threat scores, one glance</h2>
+  <p class="sub">Every few minutes Threat Monitor checks trusted public sources, scores each category from 0 to 100, and shows the latest headline behind each score in plain English, with the source and how long ago it was published.</p>
+  <div class="grid4">
+   <article class="card"><span class="tag t-war">WAR</span><h3>Conflict</h3><p>How much of the world's general news is about armed conflict, missile strikes and military escalation.</p></article>
+   <article class="card"><span class="tag t-dis">DIS</span><h3>Natural disasters</h3><p>Earthquakes, tropical cyclones, floods and volcanoes from official GDACS alert levels, with USGS as a backup.</p></article>
+   <article class="card"><span class="tag t-cyb">CYB</span><h3>Cyber attacks</h3><p>Breaches, ransomware and actively exploited vulnerabilities, including the US CISA catalog.</p></article>
+   <article class="card"><span class="tag t-bio">BIO</span><h3>Outbreaks</h3><p>Disease outbreaks and public-health emergencies, including World Health Organization notices.</p></article>
+  </div>
+  <picture>
+   <source type="image/webp" srcset="screens-992.webp 992w, screens-1984.webp 1984w" sizes="(max-width:1120px) 100vw, 1080px">
+   <img class="shot mt32" src="screens.png" width="1984" height="512" loading="lazy" decoding="async" alt="Three Threat Monitor screens: the score dashboard, a WAR news alert and a BIO news alert">
+  </picture>
+ </div>
+</section>
+
+<section id="scores">
+ <div class="wrap">
+  <h2>How the Global Threat Index works</h2>
+  <p class="sub">WAR, CYB and BIO compare today's coverage with each source's own usual level over the last 30 days, so an ordinary day reads about 35. Twice the usual coverage reads about 58, three times about 73. DIS follows official alert levels: routine green alerts count a little, orange and red alerts count fully. The Global Threat Index combines all four and gives more weight to whichever is highest.</p>
+  <ul class="levels" aria-label="Threat levels">
+   <li class="l1">LOW<span>&lt; 30</span></li>
+   <li class="l2">GUARDED<span>30&ndash;44</span></li>
+   <li class="l3">ELEVATED<span>45&ndash;59</span></li>
+   <li class="l4">HIGH<span>60&ndash;74</span></li>
+   <li class="l5">SEVERE<span>75+</span></li>
+  </ul>
+  <p class="sub m0">An honest note: the index measures how much is being <em>reported</em>, not real-world danger. Think of it as a news-intensity gauge for your desk, not a forecast.</p>
+ </div>
+</section>
+
+<section id="download">
+ <div class="wrap">
+  <h2>Download Threat Monitor</h2>
+  <p class="sub">All three versions are free and always point to the newest release. The Windows and macOS screensavers need nothing else installed.</p>
+  <div class="grid3">
+   <article class="card">
+    <h3>Windows 10 and 11</h3>
+    <ol class="steps"><li>Download the ZIP and unzip it.</li><li>Double-click <strong>install.bat</strong>. If you see &ldquo;Windows protected your PC&rdquo;, click <em>More info</em> then <em>Run anyway</em>.</li><li>Pick a wait time in Screen Saver Settings and click OK.</li></ol>
+    <a class="btn pri" href="https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-Windows.zip">Windows screensaver (ZIP)</a>
+   </article>
+   <article class="card">
+    <h3>macOS 12 or later</h3>
+    <ol class="steps"><li>Download the ZIP and open it.</li><li>Double-click <strong>Threat Monitor.saver</strong> and click Install.</li><li>Choose Threat Monitor in System Settings, Screen Saver. If macOS asks, allow it under Privacy &amp; Security, Open Anyway.</li></ol>
+    <a class="btn pri" href="https://github.com/kuydigital/threat_monitor/releases/latest/download/ThreatMonitor-macOS.zip">macOS screensaver (ZIP)</a>
+   </article>
+   <article class="card" id="raspberry-pi">
+    <h3>Raspberry Pi OS and Linux</h3>
+    <ol class="steps"><li>Open a terminal on the desktop.</li><li>Run the one-line installer below.</li><li>It appears after 5 idle minutes. Any key or mouse move closes it.</li></ol>
+    <pre id="cmd"><code>curl -fsSL https://raw.githubusercontent.com/kuydigital/threat_monitor/main/linux/install.sh | sudo bash</code></pre>
+    <button class="copy" type="button" data-copy="cmd">Copy command</button>
+   </article>
+  </div>
+  <p class="note">Prefer to read the code first? Everything, including the build scripts and tests, is on <a href="https://github.com/kuydigital/threat_monitor">GitHub under the MIT License</a>. It also runs in a window on any desktop with Python, and fits a tiny 320&times;240 Raspberry Pi screen.</p>
+ </div>
+</section>
+
+<section id="sources">
+ <div class="wrap">
+  <h2>Built only on trusted public sources</h2>
+  <p class="sub">Threat Monitor reads public feeds directly. Headlines belong to their publishers and are always shown with their source.</p>
+  <ul class="src">
+   <li>BBC News, Al Jazeera and NPR news feeds</li>
+   <li>Google News search feeds</li>
+   <li>GDACS global disaster alerts (&copy; European Union, CC BY 4.0)</li>
+   <li>USGS earthquake feed</li>
+   <li>CISA Known Exploited Vulnerabilities catalog</li>
+   <li>WHO Disease Outbreak News</li>
+  </ul>
+ </div>
+</section>
+
+<section id="faq">
+ <div class="wrap">
+  <h2>Frequently asked questions</h2>
+  <details><summary>Is Threat Monitor free?</summary><p>Yes. All three versions (Windows, macOS and Raspberry Pi OS) are free and open source under the MIT License. There is no account, subscription or sign-up.</p></details>
+  <details><summary>Does the Global Threat Index predict danger?</summary><p>No. It measures how much the news is reporting on each kind of threat compared with the usual level over the last 30 days. Treat it as a news-intensity indicator, not a forecast of real-world danger.</p></details>
+  <details><summary>Where does the data come from?</summary><p>Public RSS feeds from BBC News, Al Jazeera, NPR and Google News, GDACS disaster alerts, the USGS earthquake feed, the CISA Known Exploited Vulnerabilities catalog and WHO Disease Outbreak News.</p></details>
+  <details><summary>Why does Windows say it protected my PC?</summary><p>Windows shows that message for downloaded programs that are not signed by a company. Click More info, then Run anyway. The full source code is public on GitHub.</p></details>
+  <details><summary>Does it need Python or anything else installed?</summary><p>No. The Windows and macOS screensavers are self-contained. The Raspberry Pi OS installer adds the few packages it needs automatically.</p></details>
+  <details><summary>Can I run it on a Raspberry Pi with a small screen?</summary><p>Yes. It was designed to fit a 320&times;240 display and also runs full screen, in a window, or as a Raspberry Pi OS screensaver that appears after 5 idle minutes.</p></details>
+ </div>
+</section>
+</main>
+
+<footer>
+ <div class="wrap">
+  <span>Threat Monitor &copy; 2026 Oliver Kuy &middot; MIT License</span>
+  <span>Made by <a href="https://github.com/kuydigital">KUYDIGITAL</a> &middot; <a href="https://github.com/kuydigital/threat_monitor/issues">Report an issue</a></span>
+ </div>
+</footer>
+<script>
+document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=document.getElementById(b.dataset.copy).innerText;if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy command'},2000)})}});
+</script>
+</body>
+</html>
