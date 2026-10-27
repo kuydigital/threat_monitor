@@ -96,7 +96,8 @@ g = {"now": now.timestamp(), "status": status, "python": sys.version.split()[0]}
 # ---- 2. configuration (so the two versions can't drift apart) ---------------
 g["patterns"] = {
     name: {"rules": [[rx.pattern, w, flags(rx)] for rx, w in cfg["rules"]],
-           "exclude": [cfg["exclude"].pattern, flags(cfg["exclude"])]}
+           "exclude": [cfg["exclude"].pattern, flags(cfg["exclude"])],
+           "offtopic": [cfg["offtopic"].pattern, flags(cfg["offtopic"])]}
     for name, cfg in tm.CATEGORIES.items()}
 g["condense_patterns"] = {
     "label": [tm._LABEL_RE.pattern, flags(tm._LABEL_RE)],
@@ -196,6 +197,10 @@ CRAFTED_SEVERITY = [
     ("Man killed in a bus crash", ""), ("Hamas and Israel agree ceasefire", ""),
     ("Two teens in custody after home invasion", ""), ("Invasion of privacy lawsuit filed", ""),
     ("Russia's invasion of Ukraine enters new phase", ""),
+    ("California's golden mussel invasion sparks increased concerns from Stockton-area leaders", ""),
+    ("New Marvel Cosmic Invasion: The Siege of Castle Doom gameplay details", ""),
+    ("Russian troops launch ground invasion of border region", ""),
+    ("Fans invade pitch after cup final", ""), ("Alien invasion film tops charts", ""),
 ]
 seen = set()
 g["severity"] = []

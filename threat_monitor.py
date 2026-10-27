@@ -1,4 +1,4 @@
-# SYSTEM THREAT MONITOR  v3.7
+# SYSTEM THREAT MONITOR  v3.8
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
 # Revised: Wednesday, October 14, 2026, 1:40 PM (Philippine time)
 #
@@ -154,10 +154,12 @@ ALJAZEERA = feed("ALJAZEERA", "https://www.aljazeera.com/xml/rss/all.xml", "Al J
 CATEGORIES = {
     "WAR": {
         "feeds": [bbc("world"), ALJAZEERA, npr(1004, 72),
-                  google_news("war OR airstrike OR missile OR invasion OR shelling when:1d")],
+                  google_news('(war OR airstrike OR missile OR shelling OR "ground invasion" OR "military offensive") '
+                              '-game -gameplay -trailer -movie -species -invasive when:1d')],
         "rules": [
             (r"\bnuclear (strike|attack|weapons? test|threat)s?\b", 6),
-            (r"\b(invasion|invades?|invaded|massacres?)\b", 5),
+            (r"\b((full[- ]scale|ground|military|armed|amphibious|land) invasion|invades?|invaded|massacres?)\b", 5),
+            (r"\binvasions?\b", 3),
             (r"\b(air ?strikes?|drone strikes?|drone attacks?|missile (strikes?|attacks?)|ballistic missiles?|"
              r"rocket (fire|attacks?))\b", 4),
             (r"\b(shelling|bombardment|bombing|bombed|war crimes?)\b", 4),
@@ -174,11 +176,15 @@ CATEGORIES = {
             r"\bstar wars\b", r"\b(price|trade|tariff|bidding|console|streaming|talent|format) wars?\b",
             r"\bculture wars?\b", r"\bwar of words\b", r"\bwar chest\b",
             r"\bwar on (drugs|poverty|cancer|waste|obesity)\b",
-            r"\bwar (film|movie|drama|game|memorial|museum|veteran|anniversary)s?\b",
+            r"\bwar (film|movie|drama|game|memorial|museum|veteran|vet|anniversary)s?\b",
             r"\bworld war (i|ii|one|two|1|2)\b",
+            r"\b(department|dept\.?|secretary) of war\b",
             r"\boffensive (remarks?|comments?|language|jokes?|posts?|tweets?|content|messages?|chants?|coordinator|line|lineman)\b",
             r"\bfront ?-?line (workers?|staff|nurses?|doctors?|services?|health|care)\b",
             r"\bshelling out\b", r"\bhome[- ]invasions?\b", r"\binvasion of privacy\b",
+            r"\bpitch invasions?\b", r"\binvade[sd]? (the )?pitch\b",
+            r"\b(alien|zombie|tourist|pest|insect|locust|rat|mouse|mice|bug|weed|plant|crab|carp|jellyfish|"
+            r"mussel|seaweed|algae|species) invasions?\b",
             # labour strikes, not military strikes
             r"\b(rail|train|tube|bus|teachers?|doctors?|nurses?|workers?|union|general|hunger|labou?r|national|"
             r"postal|port|dock|airline|pilots?|staff) strikes?\b",
@@ -196,6 +202,15 @@ CATEGORIES = {
             r"\bdrones? (delivery|deliveries|show|light show|photography|racing|footage)\b",
             r"\bkilled (in|by) (a |an |the )?(bus |car |train |road |plane |motorway )?(crash|accident|fire|"
             r"flood|landslide|avalanche|storm|lightning|collision|stampede)\b",
+        ],
+        # Off-topic: a story that matches any of these is not war news at all
+        # (games, films, sport, wildlife), whatever war words it uses.
+        "offtopic": [
+            r"\b(gameplay|video ?games?|trailer|dlc|playstation|ps5|xbox|nintendo|steam deck|esports?|"
+            r"marvel|dc comics|superheroe?s?|box office|netflix|disney|anime|manga|album|concert|board games?)\b",
+            r"\b(nfl|nba|mlb|nhl|premier league|champions league|touchdown|quarterback|playoffs?|halftime|kickoff)\b",
+            r"\b(invasive|species|wildlife|mussels?|insects?|beetles?|locusts?|termites?|weeds?|algae|"
+            r"seaweed|jellyfish)\b",
         ],
     },
     "CYB": {
@@ -248,9 +263,12 @@ CATEGORIES = {
     },
 }
 
+NEVER = "(?!)"                # a pattern that matches nothing
+
 for _cfg in CATEGORIES.values():
     _cfg["rules"] = [(re.compile(p, re.I), w) for p, w in _cfg["rules"]]
     _cfg["exclude"] = re.compile("|".join(_cfg["exclude"]), re.I)
+    _cfg["offtopic"] = re.compile("|".join(_cfg.get("offtopic", [])) or NEVER, re.I)
 
 GDACS_GREEN_BY_TYPE = {"EQ": 0.5, "TC": 1.0, "FL": 0.5, "VO": 0.5, "DR": 0.5, "WF": 0.2}
 GDACS_LEVEL = {"orange": 6.0, "red": 15.0}
@@ -340,7 +358,10 @@ def fetch_rss_items(url, params=None, label=""):
 
 
 def story_severity(cfg, title, desc):
-    text = cfg["exclude"].sub(" ", f"{title} . {desc}")
+    text = f"{title} . {desc}"
+    if cfg["offtopic"].search(text):
+        return 0.0
+    text = cfg["exclude"].sub(" ", text)
     return max((w for rx, w in cfg["rules"] if rx.search(text)), default=0.0)
 
 
@@ -1646,7 +1667,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.7 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.8 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1772,7 +1793,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.7 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.8 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim

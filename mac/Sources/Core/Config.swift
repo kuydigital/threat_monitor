@@ -135,22 +135,26 @@ struct Category {
     let extra: String?
     let rules: [(rx: Rx, weight: Double)]
     let exclude: Rx
+    let offtopic: Rx           // a match means the story is not about this category at all
 
-    init(_ name: String, feeds: [Feed], extra: String? = nil, rules: [(String, Double)], exclude: [String]) {
+    init(_ name: String, feeds: [Feed], extra: String? = nil, rules: [(String, Double)], exclude: [String],
+         offtopic: [String] = []) {
         self.name = name
         self.feeds = feeds
         self.extra = extra
         self.rules = rules.map { (rx: Rx($0.0, ci: true), weight: $0.1) }
         self.exclude = Rx(exclude.joined(separator: "|"), ci: true)
+        self.offtopic = Rx(offtopic.isEmpty ? "(?!)" : offtopic.joined(separator: "|"), ci: true)
     }
 }
 
 enum Config {
     private static let warFeeds: [Feed] = [Feed.bbc("world"), Feed.aljazeera, Feed.npr(1004, 72),
-            Feed.google("war OR airstrike OR missile OR invasion OR shelling when:1d")]
+            Feed.google(#"(war OR airstrike OR missile OR shelling OR "ground invasion" OR "military offensive") -game -gameplay -trailer -movie -species -invasive when:1d"#)]
     private static let warRules: [(String, Double)] = [
         (#"\bnuclear (strike|attack|weapons? test|threat)s?\b"#, 6),
-        (#"\b(invasion|invades?|invaded|massacres?)\b"#, 5),
+        (#"\b((full[- ]scale|ground|military|armed|amphibious|land) invasion|invades?|invaded|massacres?)\b"#, 5),
+        (#"\binvasions?\b"#, 3),
         (#"\b(air ?strikes?|drone strikes?|drone attacks?|missile (strikes?|attacks?)|ballistic missiles?|rocket (fire|attacks?))\b"#, 4),
         (#"\b(shelling|bombardment|bombing|bombed|war crimes?)\b"#, 4),
         (#"\b(war|wars|warfare|missiles?)\b"#, 3),
@@ -165,11 +169,14 @@ enum Config {
         #"\bstar wars\b"#, #"\b(price|trade|tariff|bidding|console|streaming|talent|format) wars?\b"#,
         #"\bculture wars?\b"#, #"\bwar of words\b"#, #"\bwar chest\b"#,
         #"\bwar on (drugs|poverty|cancer|waste|obesity)\b"#,
-        #"\bwar (film|movie|drama|game|memorial|museum|veteran|anniversary)s?\b"#,
+        #"\bwar (film|movie|drama|game|memorial|museum|veteran|vet|anniversary)s?\b"#,
         #"\bworld war (i|ii|one|two|1|2)\b"#,
+        #"\b(department|dept\.?|secretary) of war\b"#,
         #"\boffensive (remarks?|comments?|language|jokes?|posts?|tweets?|content|messages?|chants?|coordinator|line|lineman)\b"#,
         #"\bfront ?-?line (workers?|staff|nurses?|doctors?|services?|health|care)\b"#,
         #"\bshelling out\b"#, #"\bhome[- ]invasions?\b"#, #"\binvasion of privacy\b"#,
+        #"\bpitch invasions?\b"#, #"\binvade[sd]? (the )?pitch\b"#,
+        #"\b(alien|zombie|tourist|pest|insect|locust|rat|mouse|mice|bug|weed|plant|crab|carp|jellyfish|mussel|seaweed|algae|species) invasions?\b"#,
         // labour strikes, not military strikes
         #"\b(rail|train|tube|bus|teachers?|doctors?|nurses?|workers?|union|general|hunger|labou?r|national|postal|port|dock|airline|pilots?|staff) strikes?\b"#,
         #"\bon strike\b"#, #"\bstrikes? (action|ballot|vote|over (pay|wages|pensions))\b"#,
@@ -181,6 +188,14 @@ enum Config {
         #"\bmilitary (service exemptions?|exemptions?|parade|band|academy|school|history|museum|style|grade|tattoo)\b"#,
         #"\bdrones? (delivery|deliveries|show|light show|photography|racing|footage)\b"#,
         #"\bkilled (in|by) (a |an |the )?(bus |car |train |road |plane |motorway )?(crash|accident|fire|flood|landslide|avalanche|storm|lightning|collision|stampede)\b"#,
+    ]
+
+    // Off-topic: a story that matches any of these is not war news at all
+    // (games, films, sport, wildlife), whatever war words it uses.
+    private static let warOfftopic: [String] = [
+        #"\b(gameplay|video ?games?|trailer|dlc|playstation|ps5|xbox|nintendo|steam deck|esports?|marvel|dc comics|superheroe?s?|box office|netflix|disney|anime|manga|album|concert|board games?)\b"#,
+        #"\b(nfl|nba|mlb|nhl|premier league|champions league|touchdown|quarterback|playoffs?|halftime|kickoff)\b"#,
+        #"\b(invasive|species|wildlife|mussels?|insects?|beetles?|locusts?|termites?|weeds?|algae|seaweed|jellyfish)\b"#,
     ]
 
     private static let cybFeeds: [Feed] = [Feed.bbc("technology"), Feed.npr(1019, 168),
@@ -227,7 +242,7 @@ enum Config {
     ]
 
     static let categories: [String: Category] = [
-        "WAR": Category("WAR", feeds: warFeeds, rules: warRules, exclude: warExclude),
+        "WAR": Category("WAR", feeds: warFeeds, rules: warRules, exclude: warExclude, offtopic: warOfftopic),
         "CYB": Category("CYB", feeds: cybFeeds, extra: "CISA", rules: cybRules, exclude: cybExclude),
         "BIO": Category("BIO", feeds: bioFeeds, extra: "WHO", rules: bioRules, exclude: bioExclude),
     ]

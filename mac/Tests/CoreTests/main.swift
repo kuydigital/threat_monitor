@@ -112,6 +112,9 @@ for name in TM.newsCats {
     let ex = arr(obj(gp[name])["exclude"])
     expect("patterns", str(ex.first) == cfg.exclude.pattern, "\(name) exclusions differ:\n    swift  \(cfg.exclude.pattern)\n    python \(str(ex.first) ?? "")")
     expect("patterns", (ex.count > 1 ? ex[1] as? Bool : nil) == cfg.exclude.ci, "\(name) exclusion case flag")
+    let off = arr(obj(gp[name])["offtopic"])
+    expect("patterns", str(off.first) == cfg.offtopic.pattern, "\(name) off-topic patterns differ:\n    swift  \(cfg.offtopic.pattern)\n    python \(str(off.first) ?? "")")
+    expect("patterns", (off.count > 1 ? off[1] as? Bool : nil) == cfg.offtopic.ci, "\(name) off-topic case flag")
 }
 let cp = obj(golden["condense_patterns"])
 func checkPattern(_ label: String, _ rx: Rx, _ ref: Any?) {

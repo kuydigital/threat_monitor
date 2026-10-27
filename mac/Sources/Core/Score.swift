@@ -137,7 +137,9 @@ enum Score {
 
     /// A story's severity: its highest matching rule weight.
     static func severity(_ cfg: Category, _ title: String, _ desc: String) -> Double {
-        let text = cfg.exclude.sub("\(title) . \(desc)", " ")
+        let raw = "\(title) . \(desc)"
+        if cfg.offtopic.search(raw) { return 0 }
+        let text = cfg.exclude.sub(raw, " ")
         var best = 0.0
         for rule in cfg.rules where rule.weight > best && rule.rx.search(text) {
             best = rule.weight
