@@ -181,7 +181,7 @@ enum Parse {
                 continue
             }
             let full = HTMLText.strip(raw["title"])
-            let title = Text.tidyGdacsTitle(full)
+            let title = Text.tidyGdacsTitle(full, HTMLText.strip(raw["description"]))
             let date = Dates.rfc822(raw[ns + "datemodified"]) ?? Dates.rfc822(raw["pubDate"]) ?? now
             out.append(Story(sev: sev, date: date, title: title, source: "GDACS"))
         }

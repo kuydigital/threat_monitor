@@ -214,10 +214,11 @@ gdacs_raw = []
 if status.get("DIS:GDACS") == "ok":
     try:
         root = ET.fromstring(open(fixture("DIS:GDACS"), "rb").read())
-        gdacs_raw = [tm.strip_html(i.findtext("title")) for i in root.iter("item")]
+        gdacs_raw = [(tm.strip_html(i.findtext("title")), tm.strip_html(i.findtext("description")))
+                     for i in root.iter("item")]
     except ET.ParseError:
         pass
-gdacs_raw += [
+gdacs_crafted = [
     "Green earthquake (Magnitude 5.9M, Depth:45.951km) in Indonesia 03/10/2026 22:55 UTC, 130 thousand in MMI V",
     "Orange earthquake (Magnitude 6.8M, Depth:10km) in Japan 1/2/2026 3:04:05 UTC, Few people affected in MMI VII",
     "Red earthquake (Magnitude 7.4M, Depth:33km) in Chile 12/12/2026 10:00 UTC, 1.2 million in MMI IX",
@@ -238,8 +239,27 @@ gdacs_raw += [
     "or higher is 0.291 million .",
     "Orange notification for tropical cyclone KOGUMA-26. Population affected by Category 1 (120 km/h) wind speeds "
     "or higher is 1,250 (2.5 thousand in Tropical Storm).",
+    "Green earthquake (Magnitude 5.5M, Depth:10km) in Fiji 26/10/2026 10:00 UTC, 2 thousand in 100km.",
 ]
-g["gdacs_titles"] = [[t, tm.tidy_gdacs_title(t)] for t in dict.fromkeys(gdacs_raw)]
+CYCLONE = ("{lvl} notification for tropical cyclone {name}. Population affected by Category 1 (120 km/h) wind speeds "
+           "or higher is {pop}.")
+CYCLONE_DESC = ("From 25/10/2026 to 27/10/2026, a Hurricane/Typhoon > 74 mph (maximum wind speed of {wind} km/h) {name} "
+                "was active in {ocean}. The cyclone affects these countries: {countries} (vulnerability High). ")
+gdacs_raw += [(t, "") for t in gdacs_crafted] + [
+    (CYCLONE.format(lvl=lvl, name=name, pop=pop),
+     CYCLONE_DESC.format(wind=wind, name=name, ocean=ocean, countries=countries))
+    for lvl, name, pop, wind, ocean, countries in [
+        ("Green", "IN-FA-26", "0  (0 in Tropical Storm)", 241, "NWPacific", "Marshall Islands"),
+        ("Orange", "ARNAB-26", "6.028 million ", 185, "NorthIndian", "India, Bangladesh"),
+        ("Red", "KAI-26", "1,250 (2.5 thousand in Tropical Storm)", 160, "SouthPacific", "Fiji, Tonga, Samoa"),
+        ("Green", "ALMA-26", "0  (0 in Tropical Storm)", 130, "NorthAtlantic", "[unknown]"),
+        ("Green", "BO-26", "0  (12 in Tropical Storm)", 95, "EastPacific", "Philippines"),
+        ("Orange", "CY-26", "0  (0 in Tropical Storm)", 50, "CentralPacific", "[unknown]"),
+        ("Green", "DORA-26", "0  (0 in Tropical Storm)", 120, "SouthIndian", "United States, Bahamas"),
+        ("Green", "EVE-26", "0  (0 in Tropical Storm)", 140, "WestPacific", "Guam"),
+        ("Green", "FAY-26", "0  (0 in Tropical Storm)", 140, "Australia", "Australia"),
+    ]]
+g["gdacs_titles"] = [[t, d, tm.tidy_gdacs_title(t, d)] for t, d in dict.fromkeys(gdacs_raw)]
 
 g["strip_html"] = [[s, tm.strip_html(s)] for s in [
     "<p>Hello&nbsp;<b>world</b> &amp; &#8217;quotes&#x2019; &rsquo;</p>", "  multiple   spaces\n\tnewline ",

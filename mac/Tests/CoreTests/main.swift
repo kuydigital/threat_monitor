@@ -244,8 +244,9 @@ for r in arr(golden["normalize"]) {
 }
 for r in arr(golden["gdacs_titles"]) {
     let row = arr(r)
-    guard row.count == 2, let input = str(row[0]), let ref = str(row[1]) else { continue }
-    expect("text", Text.tidyGdacsTitle(input) == ref, "tidy_gdacs_title(\(q(input))) = \(q(Text.tidyGdacsTitle(input))), Python \(q(ref))")
+    guard row.count == 3, let input = str(row[0]), let desc = str(row[1]), let ref = str(row[2]) else { continue }
+    let mine = Text.tidyGdacsTitle(input, desc)
+    expect("text", mine == ref, "tidy_gdacs_title(\(q(input)), \(q(desc))) = \(q(mine)), Python \(q(ref))")
 }
 for c in arr(golden["condense"]) {
     let o = obj(c)

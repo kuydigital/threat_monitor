@@ -25,9 +25,18 @@ enum Text {
     static let unknownRx = Rx(#",?\s*\[unknown\]"#)
     static let mmiRx = Rx(#"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+\(?in MMI\s*(>=)?\s*([IVX]+)\b\)?"#, ci: true)
     static let noPeopleRx = Rx(#"\bNo people affected in (\d+)\s*km\b"#)
+    static let peopleNearRx = Rx(#"\b(\d[\d.,]*(?: thousand| million)?) in (\d+)\s*km\b"#)
     static let cycloneRx = Rx(#"^(\w+) notification for tropical cyclone ([A-Z0-9-]+?)(?:-\d{2})?$"#)
     static let hurricaneRx = Rx(#"Category 1 \(120 km/h\) wind speeds or higher is (\d[\d.,]*(?: thousand| million)?)"#)
     static let stormRx = Rx(#"\((\d[\d.,]*(?: thousand| million)?) in Tropical Storm\)"#)
+    static let windRx = Rx(#"maximum wind speed of (\d+)"#)
+    static let oceanRx = Rx(#"was active in (\w+)"#)
+    static let countriesRx = Rx(#"affects these countries: (.+?) \(vulnerability"#)
+    static let theRx = Rx(#"^(Philippines|Bahamas|Netherlands|Maldives|Seychelles|Comoros|United .+|.+ Islands)$"#)
+    static let camelRx = Rx(#"(?<=[a-z])(?=[A-Z])"#)
+    static let gdacsRisk = ["green": "low", "orange": "medium", "red": "high"]
+    static let oceans = ["NWPacific": "Northwest Pacific", "NEPacific": "Northeast Pacific",
+                         "NorthIndian": "North Indian Ocean", "SouthIndian": "South Indian Ocean"]
     static let usgsMagRx = Rx(#"^M ([\d.]+) - "#)           // USGS "M 5.9 - 218 km ENE of Nagqu, China"
     static let placesRx = Rx(#"^(.*?\bin )([A-Z][^,]*(?:, [A-Z][^,]*){3,}),?\s*$"#)
     static let mmiWords: [String: String] = [
@@ -55,10 +64,41 @@ enum Text {
         return "\(Int(n))"
     }
 
+    private static func first(_ rx: Rx, _ text: String) -> String? {
+        rx.matches(text).first.flatMap { Rx.group($0, 1, text as NSString) }
+    }
+
+    /// What a GDACS cyclone is called, from its top wind speed and ocean. Python: cyclone_kind().
+    static func cycloneKind(_ desc: String) -> String {
+        guard let w = first(windRx, desc), let kmh = Int(w) else { return "Tropical cyclone" }
+        if kmh < 63 { return "Tropical depression" }
+        if kmh < 119 { return "Tropical storm" }
+        let ocean = first(oceanRx, desc) ?? ""
+        if ocean.range(of: "NW|WestPacific", options: .regularExpression) != nil { return "Typhoon" }
+        if ocean.range(of: "Indian|SouthPacific|Australia", options: .regularExpression) != nil { return "Cyclone" }
+        return "Hurricane"
+    }
+
+    /// ' near the Marshall Islands', ' near India and 2 more places', ' over the Central Pacific' or ''.
+    /// Python: cyclone_place().
+    static func cyclonePlace(_ desc: String) -> String {
+        func the(_ c: String) -> String { theRx.matches(c).isEmpty ? c : "the " + c }
+        let places = (first(countriesRx, desc) ?? "").components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty && $0 != "[unknown]" }
+        if let p = places.first {
+            let more = places.count - 1
+            return " near \(the(p))" + (more > 0 ? " and \(more) more place\(more > 1 ? "s" : "")" : "")
+        }
+        if let ocean = first(oceanRx, desc) {
+            return " over the " + (oceans[ocean] ?? camelRx.sub(ocean, " "))
+        }
+        return ""
+    }
+
     /// Plain words for GDACS codes. Python: tidy_gdacs_title(), e.g.
     /// 'Red earthquake (Magnitude 7M, Depth:18km) in China 22/10/2026 14:33 UTC, 10 thousand (in MMI>=VII).'
     ///   -> 'Red magnitude 7 earthquake in China, 10 thousand people in at least very strong shaking'
-    static func tidyGdacsTitle(_ title: String) -> String {
+    static func tidyGdacsTitle(_ title: String, _ desc: String = "") -> String {
         var t = title
         var rest = ""
         if let r = title.range(of: ". ") {
@@ -77,12 +117,13 @@ enum Text {
             return "\(people) in \(atLeast ? "at least " : "")\(mmiWords[level.uppercased()] ?? "level " + level) shaking"
         }
         t = noPeopleRx.sub(t, "no people within $1 km")
+        t = peopleNearRx.sub(t, "$1 people within $2 km")
         if let m = cycloneRx.matches(t).first {          // "IN-FA-26" -> "In-Fa" (the -26 is the year)
             let ns = t as NSString
             let level = Rx.group(m, 1, ns) ?? ""
             let name = (Rx.group(m, 2, ns) ?? "").components(separatedBy: "-")
                 .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }.joined(separator: "-")
-            t = "\(level) tropical cyclone \(name)"
+            t = "\(cycloneKind(desc)) \(name)\(cyclonePlace(desc))"
             let rns = rest as NSString
             let hurricane = hurricaneRx.matches(rest).first.flatMap { Rx.group($0, 1, rns) }
             let storm = stormRx.matches(rest).first.flatMap { Rx.group($0, 1, rns) }
@@ -90,6 +131,9 @@ enum Text {
                 t += ", \(peopleCount(h)) people in winds over 120 km/h"
             } else if let s = storm, peopleNumber(s) > 0 {
                 t += ", \(peopleCount(s)) people in tropical storm winds"
+            } else {
+                if let w = first(windRx, desc) { t += ", winds up to \(w) km/h" }
+                t += ", \(gdacsRisk[level.lowercased()] ?? "unknown") risk"
             }
         }
         // "Drought is on going in Austria, Belgium, ... Ukraine," (29 countries) ->
@@ -228,8 +272,8 @@ enum Text {
 
     /// Every pattern used for headlines (the tests compare them with Python).
     static var allRx: [Rx] {
-        [suffixRx, normRx, quakeMagRx, magRx, gdacsDateRx, unknownRx, mmiRx, noPeopleRx, cycloneRx, hurricaneRx, stormRx,
-         usgsMagRx, placesRx, labelRx, bracketRx, leadAttrRx, codesRx, fillerRx, clauseRx, dashRx, cutRx]
+        [suffixRx, normRx, quakeMagRx, magRx, gdacsDateRx, unknownRx, mmiRx, noPeopleRx, peopleNearRx, cycloneRx, hurricaneRx, stormRx,
+         windRx, oceanRx, countriesRx, theRx, camelRx, usgsMagRx, placesRx, labelRx, bracketRx, leadAttrRx, codesRx, fillerRx, clauseRx, dashRx, cutRx]
             + tailRxs + abbreviations.map { $0.rx }
     }
 }

@@ -1,4 +1,4 @@
-# SYSTEM THREAT MONITOR  v3.8
+# SYSTEM THREAT MONITOR  v3.9
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
 # Revised: Wednesday, October 14, 2026, 1:40 PM (Philippine time)
 #
@@ -593,13 +593,54 @@ def people_count(text):
     return str(int(n))
 
 
-def tidy_gdacs_title(title):
+GDACS_RISK = {"green": "low", "orange": "medium", "red": "high"}
+OCEANS = {"NWPacific": "Northwest Pacific", "NEPacific": "Northeast Pacific", "NorthIndian": "North Indian Ocean",
+          "SouthIndian": "South Indian Ocean"}
+
+
+def cyclone_kind(desc):
+    """What a GDACS cyclone is called, from its top wind speed and ocean: typhoon in the
+    Northwest Pacific, cyclone in the Indian Ocean and South Pacific, hurricane elsewhere."""
+    wind = re.search(r"maximum wind speed of (\d+)", desc)
+    if not wind:
+        return "Tropical cyclone"
+    kmh = int(wind.group(1))
+    if kmh < 63:
+        return "Tropical depression"
+    if kmh < 119:
+        return "Tropical storm"
+    ocean = (re.search(r"was active in (\w+)", desc) or [None, ""])[1]
+    if re.search(r"NW|WestPacific", ocean):
+        return "Typhoon"
+    if re.search(r"Indian|SouthPacific|Australia", ocean):
+        return "Cyclone"
+    return "Hurricane"
+
+
+def cyclone_place(desc):
+    """' near the Marshall Islands', ' near India and 2 more places', ' over the Central Pacific' or ''."""
+    def the(c):
+        return "the " + c if re.match(r"^(Philippines|Bahamas|Netherlands|Maldives|Seychelles|Comoros|United .+|.+ Islands)$",
+                                       c) else c
+    m = re.search(r"affects these countries: (.+?) \(vulnerability", desc)
+    places = [c.strip() for c in (m.group(1) if m else "").split(",") if c.strip() and c.strip() != "[unknown]"]
+    if places:
+        more = len(places) - 1
+        return f" near {the(places[0])}" + (f" and {more} more place{'s' if more > 1 else ''}" if more else "")
+    ocean = (re.search(r"was active in (\w+)", desc) or [None, ""])[1]
+    if ocean:
+        return " over the " + OCEANS.get(ocean, re.sub(r"(?<=[a-z])(?=[A-Z])", " ", ocean))
+    return ""
+
+
+def tidy_gdacs_title(title, desc=""):
     """Plain words for GDACS codes, e.g.
     'Red earthquake (Magnitude 7M, Depth:18km) in China 22/10/2026 14:33 UTC, 10 thousand (in MMI>=VII).'
       -> 'Red magnitude 7 earthquake in China, 10 thousand people in at least very strong shaking'
     'Red notification for tropical cyclone CHAMPI-26. Population affected by Category 1 (120 km/h)
     wind speeds or higher is 0.291 million .'
-      -> 'Red tropical cyclone Champi, 291 thousand people in winds over 120 km/h'"""
+      -> 'Typhoon Champi near the Philippines and 5 more places, 291 thousand people in winds over 120 km/h'
+    The description (desc) gives the storm's strength, ocean and countries."""
     t, _, rest = title.partition(". ")
     t = re.sub(r"\bearthquake \(Magnitude\s*([\d.]+)\s*M?[^)]*\)", r"magnitude \1 earthquake", t)
     t = re.sub(r"\(Magnitude\s*([\d.]+)\s*M?[^)]*\)", r"magnitude \1", t)
@@ -613,10 +654,11 @@ def tidy_gdacs_title(title):
     t = re.sub(r"\b(Few people affected|\d[\d.,]*(?: thousand| million)?)\s+\(?in MMI\s*(>=)?\s*([IVX]+)\b\)?",
                mmi, t, flags=re.I)
     t = re.sub(r"\bNo people affected in (\d+)\s*km\b", r"no people within \1 km", t)
+    t = re.sub(r"\b(\d[\d.,]*(?: thousand| million)?) in (\d+)\s*km\b", r"\1 people within \2 km", t)
     m = re.match(r"^(\w+) notification for tropical cyclone ([A-Z0-9-]+?)(?:-\d{2})?$", t)
     if m:                                       # "IN-FA-26" -> "In-Fa" (the -26 is the year)
         name = "-".join(p.capitalize() for p in m.group(2).split("-"))
-        t = f"{m.group(1)} tropical cyclone {name}"
+        t = f"{cyclone_kind(desc)} {name}{cyclone_place(desc)}"
         hurricane = re.search(r"Category 1 \(120 km/h\) wind speeds or higher is (\d[\d.,]*(?: thousand| million)?)",
                               rest)
         storm = re.search(r"\((\d[\d.,]*(?: thousand| million)?) in Tropical Storm\)", rest)
@@ -624,6 +666,11 @@ def tidy_gdacs_title(title):
             t += f", {people_count(hurricane.group(1))} people in winds over 120 km/h"
         elif storm and people_number(storm.group(1)) > 0:
             t += f", {people_count(storm.group(1))} people in tropical storm winds"
+        else:
+            wind = re.search(r"maximum wind speed of (\d+)", desc)
+            if wind:
+                t += f", winds up to {wind.group(1)} km/h"
+            t += f", {GDACS_RISK.get(m.group(1).lower(), 'unknown')} risk"
     # "Drought is on going in Austria, Belgium, ... Ukraine," (29 countries) ->
     # "Drought is on going in Austria, Belgium and 27 more countries"
     m = re.match(r"^(.*?\bin )([A-Z][^,]*(?:, [A-Z][^,]*){3,}),?\s*$", t)
@@ -649,7 +696,7 @@ def gdacs_stories(now):
             sev = GDACS_GREEN_BY_TYPE.get(etype, 0.5)
         else:
             continue
-        title = tidy_gdacs_title(strip_html(item.findtext("title")))
+        title = tidy_gdacs_title(strip_html(item.findtext("title")), strip_html(item.findtext("description")))
         date = (parse_date(item.findtext(GDACS_NS + "datemodified"))
                 or parse_date(item.findtext("pubDate")) or now)
         out.append(story(sev, date, title, "GDACS"))
@@ -1667,7 +1714,7 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.8 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v3.9 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
@@ -1793,7 +1840,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.8 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v3.9 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim
