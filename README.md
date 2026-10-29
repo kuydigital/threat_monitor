@@ -13,6 +13,8 @@ any desktop.
 
 ![Threat Monitor screens (sample data)](docs/screens.png)
 
+[![Watch the Threat Monitor live on YouTube, 24/7](https://img.shields.io/badge/YouTube-Watch%20live%2024%2F7-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy69yovgkXPAzZ92min4p_g/live)
+
 ## Download
 
 | Installer | For | Download |
