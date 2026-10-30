@@ -1,6 +1,6 @@
-# SYSTEM THREAT MONITOR  v3.9
+# SYSTEM THREAT MONITOR  v4.0
 # Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
-# Revised: Wednesday, October 14, 2026, 1:40 PM (Philippine time)
+# Revised: Friday, October 30, 2026, 10:00 PM (Philippine time)
 #
 # Run:   python3 threat_monitor.py                    (fullscreen, live data)
 #        python3 threat_monitor.py --windowed 320x240 (in a window)
@@ -18,8 +18,9 @@
 # Works with pygame or pygame-ce (pip install pygame-ce on newer Python versions).
 #
 # How the numbers work (details in NOTES at the bottom):
-#   * Each category is 0-100. News categories (WAR, CYB, BIO) are measured
-#     against their own recent normal: an ordinary day reads ~35 (GUARDED).
+#   * Each category is 0-100. v4.0: WAR, CYB and BIO start from an official
+#     rating (INFORM Severity, CISA, CDC + WHO); the news, measured against
+#     its own recent normal, moves that by at most 15 points either way.
 #   * DIS uses official GDACS alert levels (USGS as a fallback).
 #   * Threat levels: LOW <30, GUARDED 30-44, ELEVATED 45-59, HIGH 60-74,
 #     SEVERE 75+.
@@ -36,15 +37,18 @@
 
 import argparse
 import html
+import io
 import json
 import math
 import os
+import posixpath
 import re
 import sys
 import threading
 import time
 import traceback
 import xml.etree.ElementTree as ET
+import zipfile
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
@@ -80,7 +84,7 @@ FEED_MIN_DENOMINATOR = 8      # steadier averages for feeds with few stories
 FEED_NORMAL_FLOOR = 0.15      # avoids huge ratios for feeds that are usually ~0
 DEFAULT_NORMAL = {
     "WAR": {"BBC": 0.55, "ALJAZEERA": 0.8, "NPR": 0.5},
-    "CYB": {"BBC": 0.3, "NPR": 0.2, "CISA": 0.3},
+    "CYB": {"BBC": 0.3, "NPR": 0.2},
     "BIO": {"BBC": 0.4, "NPR": 0.35, "WHO": 0.5},
 }
 
@@ -107,7 +111,6 @@ CALIB_MIN_SAMPLES = 6         # hours of history before the learned baseline is 
 CALIB_SETTLED = 24            # shown as "BASELINE n/24" on screen until reached
 CALIB_SAMPLE_GAP = 55 * 60    # at most one sample per hour
 
-KEV_WEIGHT, KEV_CAP = 0.05, 1.0   # per newly listed exploited vulnerability
 DON_WEIGHT, DON_CAP = 0.25, 1.0   # per distinct WHO outbreak notice
 
 # Disasters: absolute. Routine events (GDACS Green, small USGS events) count
@@ -116,10 +119,63 @@ DIS_ROUTINE_MAX = 1.0
 DIS_ROUTINE_CAP = 5.0
 DIS_SCALE = 20.0              # quiet ~22, one Orange ~42, one Red ~63
 
+# Official levels (v4.0). WAR, CYB and BIO start from an authority's own
+# rating; the news can then move it by up to PULSE_MAX points either way
+# (news at its usual level moves it 0). If the authority can't be reached,
+# the category falls back to the news alone, as before v4.0.
+PULSE_MAX = 15
+PULSE_SHARE = 1 / 3           # pulse = (news score - NORMAL_LEVEL) / 3, at most PULSE_MAX
+OFFICIAL_SCALE = 20.0         # official points -> 0-100, the same curve as DIS
+
+# BIO: CDC travel health notices (Level 1-4) and WHO emergencies.
+CDC_NOTICES_URL = "https://wwwnc.cdc.gov/travel/rss/notices.xml"
+CDC_LEVEL_POINTS = {4: 15.0, 3: 6.0, 2: 1.0, 1: 0.25}
+CDC_ROUTINE_CAP = 5.0         # Levels 1 and 2 together count at most this
+PHEIC_POINTS = 15.0           # a WHO outbreak notice of the last 30 days names a PHEIC
+PHEIC_RE = re.compile(r"public health emergency of international concern|\bPHEIC\b", re.I)
+PHEIC_ENDED_RE = re.compile(r"\b(no longer|ended|end of|terminat\w+|lifted)\b[^.]{0,80}"
+                            r"(public health emergency of international concern|\bPHEIC\b)", re.I)
+
+# CYB: CISA. Each exploited vulnerability added this week counts (twice if
+# ransomware uses it), and each joint cybersecurity advisory (AA..., including
+# #StopRansomware alerts) of the last two weeks counts more.
+CISA_ADVISORIES_URL = "https://www.cisa.gov/cybersecurity-advisories/cybersecurity-advisories.xml"
+ADVISORY_WINDOW_DAYS = 14
+KEV_POINTS, KEV_RANSOMWARE_POINTS = 1.0, 1.0
+ADVISORY_POINTS = 4.0         # median week (5 KEV, an advisory a fortnight) ~ 33
+
+# WAR: INFORM Severity (EU JRC, UN OCHA, ACAPS), published monthly. Points =
+# conflict crises rated Very High (category 5 of 5). This month is
+# compared with INFORM's own record since Sept 2020: the median month reads
+# NORMAL_LEVEL, the worst month so far ~73, and lower months less.
+# INFORM data: CC BY 4.0 - "INFORM Severity Index", https://drmkc.jrc.ec.europa.eu/inform-index
+INFORM_PAGE = "https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Severity/Results-and-data"
+INFORM_FILE = os.path.join(DATA_DIR, "inform_cache.json")   # last INFORM result
+INFORM_REFRESH_DAYS = 3       # the page is checked at most this often
+INFORM_TIMEOUT = (10, 60)     # the server is slow: the workbook (~2 MB) gets its own thread
+INFORM_MAX_AGE_DAYS = 75      # older than this (two missed releases) is not used
+INFORM_RETRY_HOURS = 6        # after a failed check
+# Very High conflict crises in every INFORM Severity release, Sept 2020 - Sept
+# 2026 (Oct 2025 and Aug 2026 were not published as workbooks).
+INFORM_HISTORY = {
+    "2020-09": 12, "2020-10": 11, "2020-11": 12, "2020-12": 11, "2021-01": 10, "2021-02": 10,
+    "2021-03": 14, "2021-04": 13, "2021-05": 13, "2021-06": 15, "2021-07": 16, "2021-08": 16,
+    "2021-09": 17, "2021-10": 17, "2021-11": 16, "2021-12": 17, "2022-01": 17, "2022-02": 17,
+    "2022-03": 15, "2022-04": 16, "2022-05": 15, "2022-06": 16, "2022-07": 15, "2022-08": 16,
+    "2022-09": 17, "2022-10": 17, "2022-11": 17, "2022-12": 17, "2023-01": 17, "2023-02": 17,
+    "2023-03": 18, "2023-04": 18, "2023-05": 18, "2023-06": 18, "2023-07": 16, "2023-08": 17,
+    "2023-09": 17, "2023-10": 17, "2023-11": 17, "2023-12": 17, "2024-01": 18, "2024-02": 18,
+    "2024-03": 18, "2024-04": 15, "2024-05": 16, "2024-06": 16, "2024-07": 17, "2024-08": 19,
+    "2024-09": 19, "2024-10": 19, "2024-11": 18, "2024-12": 17, "2025-01": 19, "2025-02": 19,
+    "2025-03": 18, "2025-04": 17, "2025-05": 18, "2025-06": 17, "2025-07": 17, "2025-08": 17,
+    "2025-09": 17, "2025-11": 14, "2025-12": 14, "2026-01": 14, "2026-02": 16, "2026-03": 17,
+    "2026-04": 17, "2026-05": 17, "2026-06": 20, "2026-07": 21, "2026-09": 21,
+}
+
 GOOGLE_NEWS = "https://news.google.com/rss/search"
 GOOGLE_PARAMS = {"hl": "en-US", "gl": "US", "ceid": "US:en"}
 WHO_DON_URL = ("https://www.who.int/api/news/diseaseoutbreaknews"
-               "?$orderby=PublicationDate%20desc&$top=20&$select=Title,PublicationDate,DonId")
+               "?$orderby=PublicationDate%20desc&$top=20&$select=Title,PublicationDate,DonId,Summary,FurtherInformation")
 CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
 
@@ -216,7 +272,6 @@ CATEGORIES = {
     "CYB": {
         "feeds": [bbc("technology"), npr(1019, 168),
                   google_news('cyberattack OR ransomware OR "data breach" OR "zero-day" when:1d')],
-        "extra": "CISA",
         "rules": [
             (r"\bransomware\b", 5),
             (r"\bzero[- ]?days?\b", 5),
@@ -418,11 +473,12 @@ def who_don_stories(now):
             continue
         if title not in latest or d > latest[title]["date"]:
             latest[title] = story(5.0, d, f"WHO outbreak notice: {title}", "WHO")
+            text = " ".join(strip_html(v.get(k)) for k in ("Title", "Summary", "FurtherInformation"))
+            latest[title]["pheic"] = bool(PHEIC_RE.search(text)) and not PHEIC_ENDED_RE.search(text)
     return list(latest.values())
 
 
 EXTRAS = {   # name -> (fetcher, weight per distinct item, cap)
-    "CISA": (cisa_kev_stories, KEV_WEIGHT, KEV_CAP),
     "WHO": (who_don_stories, DON_WEIGHT, DON_CAP),
 }
 _extra_cache = {}
@@ -441,6 +497,243 @@ def use_extra(name, result):
         return hit[1]
     log("WARN", f"{name} unavailable: {value}")
     return None
+
+
+# =============================================================================
+# OFFICIAL LEVELS (v4.0): CDC, WHO, CISA, INFORM
+# =============================================================================
+CDC_TITLE_RE = re.compile(r"^\s*Level\s+([1-4])\s*[-–]\s*(.+?)\s*$")
+
+
+def cdc_notices(now):
+    """Current CDC travel health notices as (level, title, date)."""
+    r = requests.get(CDC_NOTICES_URL, headers=HEADERS, timeout=TIMEOUT)
+    r.raise_for_status()
+    root = ET.fromstring(r.content)
+    out = []
+    for item in root.iter("item"):
+        m = CDC_TITLE_RE.match(strip_html(item.findtext("title")))
+        if m:
+            out.append((int(m.group(1)), m.group(2), parse_date(item.findtext("pubDate")) or now))
+    if not out:
+        raise RuntimeError("no travel notices in the CDC feed")
+    return out
+
+
+def cisa_advisories(now):
+    """Joint cybersecurity advisories (AA...) of the last ADVISORY_WINDOW_DAYS, as stories."""
+    r = requests.get(CISA_ADVISORIES_URL, headers=HEADERS, timeout=TIMEOUT)
+    r.raise_for_status()
+    root = ET.fromstring(r.content)
+    items = list(root.iter("item"))
+    if not items:
+        raise RuntimeError("no items in the CISA advisories feed")
+    cutoff = now - timedelta(days=ADVISORY_WINDOW_DAYS)
+    out = []
+    for item in items:
+        d = parse_date(item.findtext("pubDate"))
+        if d is not None and d >= cutoff:
+            out.append(story(5.0, d, f"CISA advisory: {strip_html(item.findtext('title'))}", "CISA"))
+    return out
+
+
+def bio_official(now, fetched, don):
+    """CDC notice points + PHEIC. Returns (points, stories, details) or None."""
+    notices = use_extra("CDC", fetched[("BIO", "CDC")])
+    if notices is None:
+        return None
+    major = sum(CDC_LEVEL_POINTS[lv] for lv, _, _ in notices if lv >= 3)
+    routine = sum(CDC_LEVEL_POINTS[lv] for lv, _, _ in notices if lv <= 2)
+    pheic = any(s.get("pheic") for s in don or [])
+    points = major + min(CDC_ROUTINE_CAP, routine) + (PHEIC_POINTS if pheic else 0.0)
+    stories = [story(3.0 + lv, d, f"CDC Level {lv} travel notice: {t}", "CDC")
+               for lv, t, d in notices if lv >= 3]
+    counts = {lv: sum(1 for x in notices if x[0] == lv) for lv in (4, 3, 2, 1)}
+    detail = (", ".join(f"Level {lv} x{n}" for lv, n in counts.items() if n)
+              + ("; WHO: a PHEIC is in force" if pheic else "; WHO: no PHEIC named in the last 30 days"))
+    return points, stories, detail
+
+
+def cyb_official(now, fetched):
+    """CISA exploited-vulnerability and advisory points. Returns (points, stories, details) or None."""
+    kev = use_extra("CISA", fetched[("CYB", "CISA")])
+    adv = use_extra("CISA-AA", fetched[("CYB", "ADVISORIES")])
+    if kev is None or adv is None:
+        return None
+    ransomware = sum(1 for s in kev if s["sev"] > 3.0)
+    points = len(kev) * KEV_POINTS + ransomware * KEV_RANSOMWARE_POINTS + len(adv) * ADVISORY_POINTS
+    detail = (f"{len(kev)} exploited vulnerabilities added in {KEV_WINDOW_DAYS} days ({ransomware} used by ransomware), "
+              f"{len(adv)} joint {'advisory' if len(adv) == 1 else 'advisories'} in {ADVISORY_WINDOW_DAYS} days")
+    return points, kev + adv, detail
+
+
+# --- INFORM Severity: a monthly Excel workbook, read with the standard library
+XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+XLSX_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+INFORM_LINK_RE = re.compile(r'href="([^"]*InfoRM/Severity/(\d{4})/([^"/]*)\.xlsx)"', re.I)
+INFORM_CONFLICT_RE = re.compile(r"conflict|violence|complex crisis", re.I)
+_inform_lock = threading.Lock()
+_inform_busy = False
+_inform_retry_at = 0.0
+
+
+def xlsx_rows(data, sheet_pattern):
+    """Rows (lists of cell strings) of the first sheet whose name matches."""
+    z = zipfile.ZipFile(io.BytesIO(data))
+    rels = {r.get("Id"): r.get("Target") for r in ET.fromstring(z.read("xl/_rels/workbook.xml.rels"))}
+    target = next(rels[s.get(XLSX_REL)] for s in ET.fromstring(z.read("xl/workbook.xml")).iter(XLSX_NS + "sheet")
+                  if re.search(sheet_pattern, s.get("name") or "", re.I))
+    target = target.lstrip("/") if target.lstrip("/").startswith("xl/") else posixpath.join("xl", target)
+    shared = []
+    if "xl/sharedStrings.xml" in z.namelist():
+        shared = ["".join(t.text or "" for t in si.iter(XLSX_NS + "t"))
+                  for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(XLSX_NS + "si")]
+    out = []
+    for row in ET.fromstring(z.read(target)).iter(XLSX_NS + "row"):
+        cells = {}
+        for c in row.iter(XLSX_NS + "c"):
+            v = c.find(XLSX_NS + "v")
+            if c.get("t") == "s" and v is not None:
+                val = shared[int(v.text)]
+            elif c.get("t") == "inlineStr":
+                val = "".join(x.text or "" for x in c.iter(XLSX_NS + "t"))
+            else:
+                val = v.text if v is not None else None
+            col = 0
+            for ch in re.match(r"[A-Z]+", c.get("r")).group(0):
+                col = col * 26 + ord(ch) - 64
+            cells[col - 1] = val
+        if cells:
+            out.append([cells.get(i) for i in range(max(cells) + 1)])
+    return out
+
+
+def inform_points(rows):
+    """(release "Month YYYY", points) from the 'all crises' sheet."""
+    release = re.search(r"Release:\s*(?:\d+\s+)?([A-Za-z]+ \d{4})", rows[0][0] or "")
+    if not release:
+        raise RuntimeError("INFORM workbook has no release date")
+    header = [(h or "").upper() for h in rows[1]]
+    drivers = next(i for i, h in enumerate(header) if h in ("DRIVERS", "TYPE OF CRISIS"))
+    category = header.index("INFORM SEVERITY CATEGORY")
+    very_high = 0
+    for r in rows[4:]:
+        if len(r) <= category or not r[1] or not re.match(r"[A-Z]{3}\d{3}$", r[1]):
+            continue
+        if not INFORM_CONFLICT_RE.search(r[drivers] or ""):
+            continue
+        try:
+            cat = int(float(r[category]))
+        except (TypeError, ValueError):
+            continue
+        very_high += cat == 5
+    if very_high == 0:
+        raise RuntimeError("no Very High conflict crises in the INFORM workbook")
+    return release.group(1), very_high
+
+
+def inform_links(page):
+    """The two newest workbook links on the INFORM page, newest first."""
+    links = sorted(INFORM_LINK_RE.findall(page), key=lambda m: (m[1], m[2][:6]))
+    return [requests.compat.urljoin(INFORM_PAGE, html.unescape(m[0]).replace(" ", "%20"))
+            for m in reversed(links[-2:])]
+
+
+def inform_refresh():
+    """Background: find the newest INFORM Severity workbook and score it. The
+    page sometimes links a release that is missing, so the one before is tried."""
+    global _inform_busy, _inform_retry_at
+    try:
+        links = inform_links(requests.get(INFORM_PAGE, headers=HEADERS, timeout=INFORM_TIMEOUT).text)
+        if not links:
+            raise RuntimeError("no workbook links on the INFORM page")
+        cached = load_inform_cache()
+        for url in links:
+            if cached and cached.get("url") == url:
+                break
+            try:
+                r = requests.get(url, headers=HEADERS, timeout=INFORM_TIMEOUT)
+                r.raise_for_status()
+                release, points = inform_points(xlsx_rows(r.content, r"all crises"))
+            except Exception as e:
+                log("WARN", f"INFORM workbook {os.path.basename(url)} unusable: {e}")
+                continue
+            cached = {"url": url, "release": release, "points": points, "new": True}
+            log("INFO", f"INFORM Severity {release}: {points:g} Very High conflict crises")
+            break
+        else:
+            raise RuntimeError("the two newest INFORM workbooks are unusable")
+        new = cached.pop("new", False)
+        cached["checked"] = time.time()
+        write_json_atomic(INFORM_FILE, cached)
+        if new:
+            wake_event.set()                    # score WAR with it now, not at the next sync
+    except Exception as e:
+        _inform_retry_at = time.time() + INFORM_RETRY_HOURS * 3600
+        log("WARN", f"INFORM Severity unavailable: {e}")
+    finally:
+        with _inform_lock:
+            _inform_busy = False
+
+
+def load_inform_cache():
+    try:
+        with open(INFORM_FILE) as f:
+            data = json.load(f)
+        return data if isinstance(data.get("points"), (int, float)) and data.get("release") else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def inform_release_age_days(release, now):
+    try:
+        d = datetime.strptime(release, "%B %Y").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return (now - d).days
+
+
+def war_official(now, refresh=True):
+    """WAR official level from the cached INFORM result; starts a background
+    refresh when it is due. Returns (score, details) or None."""
+    global _inform_busy
+    cached = load_inform_cache()
+    due = not cached or time.time() - cached.get("checked", 0) > INFORM_REFRESH_DAYS * 86400
+    if refresh and due and time.time() >= _inform_retry_at:
+        with _inform_lock:
+            start, _inform_busy = not _inform_busy, True
+        if start:
+            threading.Thread(target=inform_refresh, daemon=True).start()
+    if not cached:
+        return None
+    age = inform_release_age_days(cached["release"], now)
+    if age is None or age > INFORM_MAX_AGE_DAYS:
+        return None
+    return war_score_from_points(cached["points"]), (
+        f"INFORM Severity {cached['release']}: {cached['points']:g} Very High conflict crises "
+        f"(record since 2020: median {inform_median():g}, worst {max(INFORM_HISTORY.values()):g})")
+
+
+def inform_median():
+    v = sorted(INFORM_HISTORY.values())
+    return (v[len(v) // 2] + v[(len(v) - 1) // 2]) / 2
+
+
+def war_score_from_points(points):
+    """Median month of the record -> ratio 1.0 (NORMAL_LEVEL); worst month -> 3.0
+    (~73); best month -> 0.5. Linear in between, capped at RATIO_CAP."""
+    med, lo, hi = inform_median(), min(INFORM_HISTORY.values()), max(INFORM_HISTORY.values())
+    if points >= med:
+        ratio = 1 + 2 * (points - med) / max(hi - med, 1e-9)
+    else:
+        ratio = 1 - 0.5 * (med - points) / max(med - lo, 1e-9)
+    return score_from_ratio(min(RATIO_CAP, max(0.0, ratio)))
+
+
+def with_pulse(official, news):
+    """Official score moved by the news: +-PULSE_MAX at most."""
+    pulse = max(-PULSE_MAX, min(PULSE_MAX, (news - NORMAL_LEVEL) * PULSE_SHARE))
+    return max(0, min(100, int(round(official + pulse)))), pulse
 
 
 # =============================================================================
@@ -476,6 +769,9 @@ def fetch_sources(now, timeout=None):
             jobs[(name, f["key"])] = lambda f=f: fetch_rss_items(f["url"], f["params"], f["label"])
         if cfg.get("extra"):
             jobs[(name, cfg["extra"])] = lambda e=cfg["extra"]: EXTRAS[e][0](now)
+    jobs[("CYB", "CISA")] = lambda: cisa_kev_stories(now)
+    jobs[("CYB", "ADVISORIES")] = lambda: cisa_advisories(now)
+    jobs[("BIO", "CDC")] = lambda: cdc_notices(now)
     jobs[("DIS", "GDACS")] = lambda: gdacs_stories(now)
     jobs[("DIS", "USGS")] = lambda: usgs_stories(now)
     return run_parallel(jobs, timeout)
@@ -571,6 +867,39 @@ def combine(name, comps, cal):
 
 def score_from_ratio(ratio):
     return saturate(ratio, 1 / NORMAL_K)
+
+
+def official_level(name, now, fetched, stories, refresh=True):
+    """(score 0-100, stories, details) from the category's authority, or None."""
+    if name == "WAR":
+        r = war_official(now, refresh)
+        return r and (r[0], [], r[1])
+    if name == "CYB":
+        r = cyb_official(now, fetched)
+    else:
+        r = bio_official(now, fetched, [s for s in stories if "pheic" in s])
+    return r and (saturate(r[0], OFFICIAL_SCALE), r[1], f"{r[2]} = {r[0]:g} points")
+
+
+def score_category(name, now, fetched, refresh=True):
+    """News category: official level + news pulse. Returns (value, stories,
+    comps, info); info["news"] is None when no news feed worked."""
+    comps, stories = fetch_category(name, now, fetched)
+    try:
+        news = score_from_ratio(combine(name, comps, calibration))
+    except RuntimeError as e:
+        news, news_error = None, e
+    official = official_level(name, now, fetched, stories, refresh)
+    if official is None:
+        if news is None:
+            raise news_error
+        return news, stories, comps, {"news": news, "official": None}
+    base, extra, detail = official
+    stories = stories + extra
+    if news is None:
+        return base, stories, comps, {"news": None, "official": base, "detail": detail, "pulse": 0}
+    value, pulse = with_pulse(base, news)
+    return value, stories, comps, {"news": news, "official": base, "detail": detail, "pulse": pulse}
 
 
 MMI_WORDS = {"I": "unfelt", "II": "weak", "III": "weak", "IV": "light", "V": "moderate",
@@ -969,13 +1298,15 @@ def sync_once():
             if c == "DIS":
                 value, stories = score_disasters(now, fetched)
             else:
-                comps, stories = fetch_category(c, now, fetched)
-                value = score_from_ratio(combine(c, comps, calibration))
-                for comp in comps:
+                value, stories, comps, info = score_category(c, now, fetched)
+                for comp in comps if info["news"] is not None else []:
                     if comp["ok"] and comp["kind"] != "headlines":
                         record_sample(calibration, f"{c}:{comp['key']}", comp["raw"], now_ts)
-                log("INFO", f"{c} -> {value}  (" + ", ".join(
-                    f"{x['label']} {x['ratio']:.2f}x" for x in comps if "ratio" in x) + ")")
+                how = "news only" if info["official"] is None else f"official {info['official']}"
+                if info["news"] is not None:
+                    how += f", news {info['news']} (" + ", ".join(
+                        f"{x['label']} {x['ratio']:.2f}x" for x in comps if "ratio" in x) + ")"
+                log("INFO", f"{c} -> {value}  ({how})")
             results[c] = (value, stories)
         except Exception as e:
             log("ERROR", f"{c} failed: {e}")
@@ -1714,19 +2045,31 @@ def run_check():
     global LOG_STDOUT
     LOG_STDOUT = False
     now = datetime.now(timezone.utc)
-    print(f"Threat Monitor v3.9 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
+    print(f"Threat Monitor v4.0 source check - clock {now:%Y-%m-%d %H:%M} UTC, "
           f"local {time.strftime('%Y-%m-%d %H:%M %Z')}")
     print(f"Data folder: {DATA_DIR}   learned history: {baseline_hours()} h")
     print(f"Fetching all sources (up to {SYNC_DEADLINE} s)...\n", flush=True)
     t0 = time.monotonic()
     fetched = fetch_sources(now)
+    inform_wait = time.monotonic() + 90             # first run: give INFORM time to arrive
+    war_official(now)
+    while _inform_busy and time.monotonic() < inform_wait:
+        time.sleep(1)
     for name in ("WAR", "CYB", "BIO"):
-        comps, stories = fetch_category(name, now, fetched)
         try:
-            result = str(score_from_ratio(combine(name, comps, calibration)))
+            value, stories, comps, info = score_category(name, now, fetched, refresh=False)
+            if info["official"] is None:
+                result = f"{value}  (news only: official level unavailable)"
+            elif info["news"] is None:
+                result = f"{value}  (official only: no news feed worked)"
+            else:
+                result = f"{value}  = official {info['official']} {info['pulse']:+.0f} news pulse (news {info['news']})"
         except RuntimeError as e:
-            result = f"--  ({e})"
+            comps, stories = fetch_category(name, now, fetched)
+            result, info = f"--  ({e})", {}
         print(f"{name}  ->  {result}")
+        if info.get("detail"):
+            print(f"   {'Official':<12} {info['detail']}")
         for c in comps:
             if c["kind"] == "headlines":
                 info = c["note"] or f"{c['hits']} matching headlines (shown on screen, not scored)"
@@ -1840,7 +2183,7 @@ def main():
     live = not (args.demo or args.snapshot)
     if live:
         LOG_FILE = os.path.join(DATA_DIR, "threat_monitor.log")
-        log("INFO", f"Threat Monitor v3.9 starting (data folder {DATA_DIR})")
+        log("INFO", f"Threat Monitor v4.0 starting (data folder {DATA_DIR})")
     import pygame
     disp = Display(pygame, size)
     disp.night_dim = bool(NIGHT_HOURS) and not args.no_dim
@@ -1864,10 +2207,21 @@ if __name__ == "__main__":
 # =============================================================================
 # NOTES
 # =============================================================================
-# WAR / CYB / BIO
-#   Sources: general news feeds (BBC + Al Jazeera + NPR for WAR, BBC + NPR for
-#   CYB and BIO) plus official lists (CISA exploited vulnerabilities for CYB,
-#   WHO outbreak notices for BIO). In each feed every recent story gets ONE
+# WAR / CYB / BIO = official level + news pulse (v4.0)
+#   Official level, from the authority for each category:
+#   WAR  INFORM Severity (EU JRC, UN OCHA, ACAPS; monthly): the number of
+#        conflict crises rated Very High. Compared with INFORM's own record
+#        since Sept 2020 (INFORM_HISTORY): median month ~35, worst ~73.
+#   CYB  CISA: each exploited vulnerability added in 7 days 1 point (2 if
+#        ransomware uses it), each joint advisory of the last 14 days 4.
+#   BIO  CDC travel health notices: Level 4 15 points, Level 3 6, Levels 1-2
+#        up to 5 together; +15 while a WHO outbreak notice of the last 30
+#        days names a public health emergency of international concern.
+#   CYB and BIO points use the DIS curve (100 * (1 - e^(-points/20))).
+#   News pulse: (news score - 35) / 3, at most +-15 points. If the official
+#   source can't be reached the category is the news score alone.
+#   News score: general news feeds (BBC + Al Jazeera + NPR for WAR, BBC + NPR
+#   for CYB and BIO) plus WHO outbreak notices for BIO. In each feed every recent story gets ONE
 #   severity weight (its most serious keyword match); the feed's level is the
 #   average per story. Each source is divided by its own 30-day median, the
 #   ratios are averaged, and score = 100 * (1 - e^(-0.431 * ratio)):
@@ -1887,8 +2241,8 @@ if __name__ == "__main__":
 #   a few seconds. Change NIGHT_HOURS / NIGHT_BRIGHTNESS above, or run with
 #   --no-dim. Only this script dims; threat_screensaver.py never does.
 #
-# Limits: news coverage measures how much is REPORTED, not real-world danger.
-# Because the news categories are relative to the last 30 days, a long crisis
-# slowly becomes the new "normal". Delete threat_calibration.json to restart
+# Limits: news coverage measures how much is REPORTED, not real-world danger;
+# since v4.0 it only moves an official rating. The news pulse is relative to
+# the last 30 days, so a long crisis slowly becomes its "normal". Delete threat_calibration.json to restart
 # calibration (it also resets itself automatically when CALIB_VERSION changes).
 # threat_state.json holds the last values so the display starts instantly.

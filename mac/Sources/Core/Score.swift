@@ -1,10 +1,11 @@
 // THREAT MONITOR for macOS - scoring
 // Created and maintained by Oliver Kuy - https://github.com/kuydigital/threat_monitor
 //
-// News categories (WAR, CYB, BIO) compare each source with its own 30-day
-// median: an ordinary day reads ~35 (GUARDED), twice the usual ~58, three
-// times ~73. DIS uses official GDACS alert levels (USGS as a fallback). The
-// Global Threat Index is the weighted root-mean-square of the four.
+// WAR, CYB and BIO (v4.0): an official level (Official.swift) moved by the
+// news by at most 15 points. The news compares each source with its own
+// 30-day median: an ordinary day reads ~35 (GUARDED), twice the usual ~58,
+// three times ~73. DIS uses official GDACS alert levels (USGS as a fallback).
+// The Global Threat Index is the weighted root-mean-square of the four.
 
 import Foundation
 
@@ -39,6 +40,14 @@ struct Component {
 struct CatResult {
     let score: Int
     let stories: [Story]
+}
+
+/// How a news category's score was made (shown by --check).
+struct CatInfo {
+    var news: Int?               // nil when no news feed worked
+    var official: Int?           // nil when the authority could not be reached
+    var detail = ""
+    var pulse = 0.0
 }
 
 /// Learned "normal" per source: hourly samples of its raw level.
@@ -177,10 +186,84 @@ enum Score {
 /// the last good CISA/WHO result (reused for a day if a fetch fails).
 final class Scorer {
     var calibration: Calibration
+    let inform: InformStore
     private var extraCache: [String: (time: Double, stories: [Story])] = [:]
+    private var noticeCache: (time: Double, notices: [Notice])?
 
-    init(calibration: Calibration) {
+    init(calibration: Calibration, inform: InformStore = InformStore(file: nil)) {
         self.calibration = calibration
+        self.inform = inform
+    }
+
+    private static func parsed<T>(_ key: String, _ fetched: [String: Fetched],
+                                  _ parse: (Data) throws -> T) -> Result<T, TMError> {
+        switch fetched[key] ?? .failed("not fetched") {
+        case .failed(let message): return .failure(TMError(message))
+        case .ok(let data):
+            do { return .success(try parse(data)) } catch { return .failure(TMError("\(error)")) }
+        }
+    }
+
+    /// use_extra() for the CDC notices.
+    private func useNotices(_ result: Result<[Notice], TMError>) -> [Notice]? {
+        let now = wallNow()
+        switch result {
+        case .success(let notices):
+            noticeCache = (now, notices)
+            return notices
+        case .failure(let error):
+            if let hit = noticeCache, now - hit.time < TM.extraCacheHours * 3600 {
+                tmLog("WARN", "CDC failed (\(error)); using result from \(Int((now - hit.time) / 60)) min ago")
+                return hit.notices
+            }
+            tmLog("WARN", "CDC unavailable: \(error)")
+            return nil
+        }
+    }
+
+    /// Python: official_level() - (score 0-100, stories, details) from the
+    /// category's authority, or nil.
+    func official(_ name: String, now: Date, fetched: [String: Fetched], stories: [Story],
+                  refresh: Bool = true) -> (score: Int, stories: [Story], detail: String)? {
+        let r: (points: Double, stories: [Story], detail: String)
+        switch name {
+        case "WAR":
+            guard let w = inform.war(now: now, refresh: refresh) else { return nil }
+            return (w.score, [], w.detail)
+        case "CYB":
+            guard let kev = useExtra("CISA", Scorer.parsed("CYB:CISA", fetched) { try Parse.kev($0, now: now) }),
+                  let adv = useExtra("CISA-AA", Scorer.parsed("CYB:ADVISORIES", fetched) { try Parse.advisories($0, now: now) })
+            else { return nil }
+            r = Official.cyb(kev: kev, advisories: adv)
+        default:
+            guard let notices = useNotices(Scorer.parsed("BIO:CDC", fetched) { try Parse.cdc($0, now: now) }) else { return nil }
+            r = Official.bio(notices, who: stories.filter { $0.pheic != nil })
+        }
+        return (Score.saturate(r.points, TM.officialScale), r.stories, "\(r.detail) = \(Official.g(r.points)) points")
+    }
+
+    /// Python: score_category() - official level + news pulse.
+    func scoreCategory(_ name: String, now: Date, fetched: [String: Fetched], refresh: Bool = true) throws
+        -> (value: Int, stories: [Story], comps: [Component], info: CatInfo) {
+        let r = category(name, now: now, fetched: fetched)
+        var comps = r.comps
+        var news: Int?
+        var newsError: Error?
+        do {
+            news = Score.fromRatio(try combine(name, &comps))
+        } catch {
+            newsError = error
+        }
+        guard let off = official(name, now: now, fetched: fetched, stories: r.stories, refresh: refresh) else {
+            guard let n = news else { throw newsError ?? TMError("no data") }
+            return (n, r.stories, comps, CatInfo(news: n, official: nil))
+        }
+        let stories = r.stories + off.stories
+        guard let n = news else {
+            return (off.score, stories, comps, CatInfo(news: nil, official: off.score, detail: off.detail))
+        }
+        let p = Official.withPulse(off.score, n)
+        return (p.value, stories, comps, CatInfo(news: n, official: off.score, detail: off.detail, pulse: p.pulse))
     }
 
     /// Python: use_extra()
@@ -273,16 +356,12 @@ final class Scorer {
                 parsed = .failure(TMError(message))
             case .ok(let data):
                 do {
-                    if ename == "CISA" {
-                        parsed = .success(try Parse.kev(data, now: now))
-                    } else {
-                        parsed = .success(try Parse.who(data, now: now))
-                    }
+                    parsed = .success(try Parse.who(data, now: now))
                 } catch {
                     parsed = .failure(TMError("\(error)"))
                 }
             }
-            if let extra = useExtra(ename, parsed) {
+            if let extra = useExtra(ename, parsed) {   // WHO outbreak notices
                 let n = Set(extra.map { $0.title }).count
                 let wc = Config.extraWeight(ename)
                 c.ok = true
@@ -355,11 +434,12 @@ final class Scorer {
     }
 
     /// One whole sync: every category from the downloaded sources.
-    func process(now: Date, fetched: [String: Fetched], record: Bool)
-        -> (results: [String: CatResult], errors: [String], comps: [String: [Component]]) {
+    func process(now: Date, fetched: [String: Fetched], record: Bool, refreshOfficial: Bool = true)
+        -> (results: [String: CatResult], errors: [String], comps: [String: [Component]], infos: [String: CatInfo]) {
         var results: [String: CatResult] = [:]
         var errors: [String] = []
         var allComps: [String: [Component]] = [:]
+        var infos: [String: CatInfo] = [:]
         let nowTs = now.timeIntervalSince1970
         for c in TM.cats {
             if c == "DIS" {
@@ -373,24 +453,27 @@ final class Scorer {
                 }
                 continue
             }
-            let r = category(c, now: now, fetched: fetched)
-            var comps = r.comps
             do {
-                let value = Score.fromRatio(try combine(c, &comps))
-                if record {
-                    for comp in comps where comp.ok && comp.kind != "headlines" {
+                let r = try scoreCategory(c, now: now, fetched: fetched, refresh: refreshOfficial)
+                if record && r.info.news != nil {
+                    for comp in r.comps where comp.ok && comp.kind != "headlines" {
                         calibration.record("\(c):\(comp.key)", comp.raw, nowTs)
                     }
                 }
-                let parts = comps.compactMap { x in x.ratio.map { "\(x.label) \(String(format: "%.2f", $0))x" } }
-                tmLog("INFO", "\(c) -> \(value)  (\(parts.joined(separator: ", ")))")
-                results[c] = CatResult(score: value, stories: r.stories)
+                var how = r.info.official.map { "official \($0)" } ?? "news only"
+                if let n = r.info.news {
+                    let parts = r.comps.compactMap { x in x.ratio.map { "\(x.label) \(String(format: "%.2f", $0))x" } }
+                    how += ", news \(n) (\(parts.joined(separator: ", ")))"
+                }
+                tmLog("INFO", "\(c) -> \(r.value)  (\(how))")
+                results[c] = CatResult(score: r.value, stories: r.stories)
+                allComps[c] = r.comps
+                infos[c] = r.info
             } catch {
                 tmLog("ERROR", "\(c) failed: \(error)")
                 errors.append("\(c): \(error)")
             }
-            allComps[c] = comps
         }
-        return (results, errors, allComps)
+        return (results, errors, allComps, infos)
     }
 }

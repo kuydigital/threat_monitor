@@ -34,7 +34,10 @@ def jobs():
         for f in cfg["feeds"]:
             out.append((f"{name}:{f['key']}", f["url"], f["params"]))
         if cfg.get("extra"):
-            out.append((f"{name}:{cfg['extra']}", {"CISA": tm.CISA_KEV_URL, "WHO": tm.WHO_DON_URL}[cfg["extra"]], None))
+            out.append((f"{name}:{cfg['extra']}", {"WHO": tm.WHO_DON_URL}[cfg["extra"]], None))
+    out.append(("CYB:CISA", tm.CISA_KEV_URL, None))
+    out.append(("CYB:ADVISORIES", tm.CISA_ADVISORIES_URL, None))
+    out.append(("BIO:CDC", tm.CDC_NOTICES_URL, None))
     out.append(("DIS:GDACS", "https://www.gdacs.org/xml/rss.xml", None))
     out.append(("DIS:USGS", "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson", None))
     return out
@@ -59,6 +62,32 @@ for key, url, params in jobs():
     print(f"{key:<15} {status[key][:90]}", flush=True)
 
 now = datetime.now(timezone.utc).replace(microsecond=0)
+
+# ---- 1b. INFORM Severity: the page and the newest workbook that can be read ----
+inform = {"links": [], "file": None, "rows": None, "points": None, "error": None}
+try:
+    r = requests.get(tm.INFORM_PAGE, headers=tm.HEADERS, timeout=tm.INFORM_TIMEOUT)
+    r.raise_for_status()
+    with open(os.path.join(FIX, "INFORM_page.html"), "wb") as f:
+        f.write(r.content)
+    inform["links"] = tm.inform_links(r.content.decode("utf-8", "replace"))
+    for url in inform["links"]:
+        try:
+            w = requests.get(url, headers=tm.HEADERS, timeout=tm.INFORM_TIMEOUT)
+            w.raise_for_status()
+            rows = tm.xlsx_rows(w.content, r"all crises")
+            release, points = tm.inform_points(rows)
+        except Exception as e:
+            inform["error"] = f"{url}: {e}"
+            continue
+        with open(os.path.join(FIX, "INFORM.xlsx"), "wb") as f:
+            f.write(w.content)
+        inform.update(file=url, rows=rows, release=release, points=points, error=None)
+        break
+except Exception as e:
+    inform["error"] = str(e)
+print(f"{'INFORM':<15} " + (f"{inform.get('release')}: {inform['points']}" if inform["points"] is not None
+                            else f"error: {inform['error']}"), flush=True)
 
 
 class Saved:
@@ -91,7 +120,7 @@ def flags(rx):
     return bool(rx.flags & re.I)
 
 
-g = {"now": now.timestamp(), "status": status, "python": sys.version.split()[0]}
+g = {"now": now.timestamp(), "status": status, "python": sys.version.split()[0], "inform": inform}
 
 # ---- 2. configuration (so the two versions can't drift apart) ---------------
 g["patterns"] = {
@@ -111,6 +140,9 @@ g["condense_patterns"] = {
     "dash": [tm._DASH_RE.pattern, flags(tm._DASH_RE)],
     "cut": [tm._CUT_RE.pattern, flags(tm._CUT_RE)],
 }
+g["official_patterns"] = {k: [rx.pattern, flags(rx)] for k, rx in [
+    ("pheic", tm.PHEIC_RE), ("pheic_ended", tm.PHEIC_ENDED_RE), ("cdc_title", tm.CDC_TITLE_RE),
+    ("inform_link", tm.INFORM_LINK_RE), ("inform_conflict", tm.INFORM_CONFLICT_RE)]}
 g["feeds"] = {name: [{"key": f["key"], "label": f["label"], "window": f["window"], "scored": f["scored"],
                       "url": f["url"], "params": [[k, v] for k, v in (f["params"] or {}).items()]}
                      for f in cfg["feeds"]]
@@ -120,12 +152,17 @@ g["constants"] = {k: getattr(tm, k) for k in [
     "SYNC_DEADLINE", "REFRESH_OK", "REFRESH_RETRY_MIN", "NEWS_WINDOW_HOURS", "KEV_WINDOW_DAYS",
     "DON_WINDOW_DAYS", "EXTRA_CACHE_HOURS", "NORMAL_LEVEL", "NORMAL_K", "RATIO_CAP", "MIN_FEED_STORIES",
     "FEED_MIN_DENOMINATOR", "FEED_NORMAL_FLOOR", "STATE_MAX_AGE", "CALIB_VERSION", "CALIB_DAYS",
-    "CALIB_MIN_SAMPLES", "CALIB_SETTLED", "CALIB_SAMPLE_GAP", "KEV_WEIGHT", "KEV_CAP", "DON_WEIGHT",
+    "CALIB_MIN_SAMPLES", "CALIB_SETTLED", "CALIB_SAMPLE_GAP", "DON_WEIGHT",
+    "PULSE_MAX", "PULSE_SHARE", "OFFICIAL_SCALE", "CDC_NOTICES_URL", "CDC_ROUTINE_CAP", "PHEIC_POINTS",
+    "CISA_ADVISORIES_URL", "ADVISORY_WINDOW_DAYS", "KEV_POINTS", "KEV_RANSOMWARE_POINTS", "ADVISORY_POINTS",
+    "INFORM_PAGE", "INFORM_REFRESH_DAYS", "INFORM_MAX_AGE_DAYS", "INFORM_RETRY_HOURS", "INFORM_HISTORY",
     "DON_CAP", "DIS_ROUTINE_MAX", "DIS_ROUTINE_CAP", "DIS_SCALE", "MAIN_SECS", "CAT_SECS", "FADE_SECS",
     "HEADLINE_MAX_LINES", "CLAUSE_MIN_WORDS", "WHO_DON_URL", "CISA_KEV_URL", "GOOGLE_NEWS",
     "GTI_WEIGHTS", "DEFAULT_NORMAL", "GDACS_GREEN_BY_TYPE", "GDACS_LEVEL", "USGS_PAGER", "CAT_NAMES",
     "EMPTY_MSG", "MMI_WORDS", "CATS"]}
 g["constants"]["HEADLINE_SIZE"] = tm.HEADLINE_SIZE
+g["constants"]["CDC_LEVEL_POINTS"] = {str(k): v for k, v in tm.CDC_LEVEL_POINTS.items()}
+g["constants"]["INFORM_TIMEOUT"] = tm.INFORM_TIMEOUT[1]
 g["constants"]["HEADLINE_AREA"] = list(tm.HEADLINE_AREA)
 g["constants"]["LEVELS"] = [[limit, name, list(color)] for limit, name, color in tm.LEVELS]
 g["constants"]["DANGLING"] = sorted(tm._DANGLING)
@@ -140,9 +177,11 @@ for (name, key), (st, val) in fetched.items():
         if status[k] == "ok":
             g["parse_errors"][k] = str(val)
         continue
-    if k in ("CYB:CISA", "BIO:WHO", "DIS:GDACS", "DIS:USGS"):
-        g["stories"][k] = [{"sev": s["sev"], "date": ts(s["date"]), "title": s["title"], "source": s["source"]}
-                           for s in val]
+    if k == "BIO:CDC":
+        g["stories"][k] = [{"level": lv, "title": t, "date": ts(d)} for lv, t, d in val]
+    elif k in ("CYB:CISA", "CYB:ADVISORIES", "BIO:WHO", "DIS:GDACS", "DIS:USGS"):
+        g["stories"][k] = [{"sev": s["sev"], "date": ts(s["date"]), "title": s["title"], "source": s["source"],
+                            "pheic": s.get("pheic")} for s in val]
     else:
         g["items"][k] = [{"title": i["title"], "desc": i["desc"], "date": ts(i["date"]), "source": i["source"]}
                          for i in val]
@@ -279,10 +318,22 @@ GTI_CASES = [{"WAR": 35, "DIS": 22, "CYB": 35, "BIO": 35}, {"WAR": 80, "DIS": 10
              {"WAR": 100, "DIS": 100, "CYB": 100, "BIO": 100}, {"WAR": 0, "DIS": 0, "CYB": 0, "BIO": 1},
              {"WAR": 41, "DIS": 22, "CYB": 37, "BIO": 52}]
 g["gti"] = [{"scores": c, "gti": tm.compute_gti(c)} for c in GTI_CASES]
+g["war_scores"] = [[p, tm.war_score_from_points(p)] for p in [x * 0.5 for x in range(10, 60)]]
+g["pulse"] = [[o, n, *tm.with_pulse(o, n)] for o in (0, 22, 50, 73, 95, 100) for n in (0, 10, 20, 35, 36, 50, 58, 82, 100)]
+g["inform_age"] = [[rel, tm.inform_release_age_days(rel, now)] for rel in
+                   ("September 2026", "August 2026", "January 2025", "Foo 2026", "may 2026")]
 
 # ---- 5. the whole pipeline: components and scores ---------------------------
 cal = {"version": tm.CALIB_VERSION, "samples": {}}
 tm._extra_cache.clear()
+tm.INFORM_FILE = os.path.join(OUT, "inform_cache.json")      # the WAR official level from the saved workbook
+if inform["points"] is not None:
+    with open(tm.INFORM_FILE, "w") as f:
+        json.dump({"url": inform["file"], "release": inform["release"], "points": inform["points"],
+                   "checked": now.timestamp()}, f)
+elif os.path.exists(tm.INFORM_FILE):
+    os.remove(tm.INFORM_FILE)
+tm.calibration = cal
 pipe, scores = {}, {}
 for c in tm.CATS:
     if c == "DIS":
@@ -292,13 +343,13 @@ for c in tm.CATS:
         except Exception as e:
             pipe[c] = {"score": None, "error": str(e)}
     else:
-        comps, st = tm.fetch_category(c, now, fetched)
         try:
-            ratio = tm.combine(c, comps, cal)
-            v = tm.score_from_ratio(ratio)
+            v, st, comps, info = tm.score_category(c, now, fetched, refresh=False)
         except RuntimeError:
-            ratio = v = None
-        pipe[c] = {"score": v, "ratio": ratio, "stories": len(st),
+            comps, st = tm.fetch_category(c, now, fetched)
+            v, info = None, {}
+        pipe[c] = {"score": v, "news": info.get("news"), "official": info.get("official"),
+                   "pulse": info.get("pulse"), "detail": info.get("detail"), "stories": len(st),
                    "headlines": [h["title"] for h in tm.pick_headlines(st)],
                    "components": [{k: x.get(k) for k in ("key", "kind", "ok", "items", "recent", "hits", "raw",
                                                           "ratio", "normal")} for x in comps]}

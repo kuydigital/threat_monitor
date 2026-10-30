@@ -17,6 +17,14 @@ struct Story {
     var date: Date?
     var title: String
     var source: String
+    var pheic: Bool? = nil     // WHO notices: does it name a public health emergency in force?
+}
+
+/// A CDC travel health notice.
+struct Notice {
+    var level: Int
+    var title: String
+    var date: Date
 }
 
 /// RSS reader: the direct children of every <item>, keyed like Python's
@@ -149,16 +157,49 @@ enum Parse {
         for case let v as [String: Any] in (root["value"] as? [Any]) ?? [] {
             let title = HTMLText.strip(v["Title"] as? String)
             guard let d = Dates.iso(v["PublicationDate"] as? String), d >= cutoff, !title.isEmpty else { continue }
+            func notice() -> Story {
+                let text = ["Title", "Summary", "FurtherInformation"].map { HTMLText.strip(v[$0] as? String) }
+                    .joined(separator: " ")
+                return Story(sev: 5.0, date: d, title: "WHO outbreak notice: \(title)", source: "WHO",
+                             pheic: TM.pheicRx.search(text) && !TM.pheicEndedRx.search(text))
+            }
             if let old = latest[title] {
-                if let od = old.date, d > od {
-                    latest[title] = Story(sev: 5.0, date: d, title: "WHO outbreak notice: \(title)", source: "WHO")
-                }
+                if let od = old.date, d > od { latest[title] = notice() }
             } else {
                 order.append(title)
-                latest[title] = Story(sev: 5.0, date: d, title: "WHO outbreak notice: \(title)", source: "WHO")
+                latest[title] = notice()
             }
         }
         return order.compactMap { latest[$0] }
+    }
+
+    static let cdcTitleRx = Rx(#"^\s*Level\s+([1-4])\s*[-–]\s*(.+?)\s*$"#)
+
+    /// Python: cdc_notices() - current CDC travel health notices.
+    static func cdc(_ data: Data, now: Date) throws -> [Notice] {
+        var out: [Notice] = []
+        for raw in try RSSParser.parse(data) {
+            let title = HTMLText.strip(raw["title"])
+            let ns = title as NSString
+            guard let m = cdcTitleRx.matches(title).first,
+                  let level = Rx.group(m, 1, ns).flatMap({ Int($0) }), let name = Rx.group(m, 2, ns) else { continue }
+            out.append(Notice(level: level, title: name, date: Dates.rfc822(raw["pubDate"]) ?? now))
+        }
+        if out.isEmpty { throw TMError("no travel notices in the CDC feed") }
+        return out
+    }
+
+    /// Python: cisa_advisories() - joint advisories of the last two weeks.
+    static func advisories(_ data: Data, now: Date) throws -> [Story] {
+        let items = try RSSParser.parse(data)
+        if items.isEmpty { throw TMError("no items in the CISA advisories feed") }
+        let cutoff = now.addingTimeInterval(-TM.advisoryWindowDays * 86400)
+        var out: [Story] = []
+        for raw in items {
+            guard let d = Dates.rfc822(raw["pubDate"]), d >= cutoff else { continue }
+            out.append(Story(sev: 5.0, date: d, title: "CISA advisory: \(HTMLText.strip(raw["title"]))", source: "CISA"))
+        }
+        return out
     }
 
     /// Python: gdacs_stories() - current GDACS alerts.

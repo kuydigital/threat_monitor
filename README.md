@@ -139,19 +139,37 @@ screensavers don't dim.
 
 ## How the scores work
 
-- **WAR, CYB, BIO** measure how much of the general news is about each
-  threat, compared with that source's own usual level over the last 30 days.
-  An ordinary day reads about **35 (GUARDED)**, twice the usual amount about
-  58, three times about 73. The first day uses starting estimates while the
-  monitor learns what "usual" looks like (shown as *LEARNING n/24h*).
+- **WAR, CYB, BIO** (since v1.4.0) start from an official rating and the
+  news can move it by up to **15 points** either way:
+  - **WAR:** [INFORM Severity](https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Severity)
+    (EU JRC, UN OCHA and ACAPS, monthly). This is the number of conflict
+    crises rated *Very High*, compared with INFORM's own record since
+    September 2020: a typical month (17) reads about 35, the worst so far
+    (21) about 73.
+  - **CYB:** [CISA](https://www.cisa.gov). Each actively exploited
+    vulnerability added in the last 7 days counts 1 point (2 if ransomware
+    uses it), and each joint cybersecurity advisory of the last 14 days
+    counts 4.
+  - **BIO:** [CDC travel health notices](https://wwwnc.cdc.gov/travel/notices).
+    Level 4 counts 15 points, Level 3 counts 6, and Levels 1–2 count up to
+    5 together. Add 15 while a WHO outbreak notice of the last 30 days names
+    a public health emergency of international concern (PHEIC).
+  - CYB and BIO points go on the same curve as DIS: 100 × (1 − e^(−points/20)).
+  - **News pulse:** how much of the general news is about the threat,
+    compared with each source's usual level over the last 30 days. News at
+    its usual level adds nothing; at most it adds or removes 15 points. The
+    first day uses starting estimates while the monitor learns what "usual"
+    looks like (shown as *LEARNING n/24h*).
+  - If an official source can't be reached, the category falls back to the
+    news alone, as it did before v1.4.0.
 - **DIS** uses official GDACS alert levels (USGS earthquake alerts as a backup):
   routine green alerts count a little, orange and red alerts count fully.
 - **Global Threat Index** combines the four, giving more weight to whichever
   is highest.
 - Levels: LOW < 30 · GUARDED 30–44 · ELEVATED 45–59 · HIGH 60–74 · SEVERE 75+.
 
-It measures how much is being *reported*, not real-world danger, so treat it
-as a news-intensity indicator rather than a forecast.
+The official ratings come from the agencies that track each threat; the news
+only nudges them. It is still an indicator, not a forecast.
 
 ## Data sources
 
@@ -159,8 +177,13 @@ as a news-intensity indicator rather than a forecast.
 [NPR](https://www.npr.org) and [Google News](https://news.google.com) RSS feeds;
 [GDACS](https://www.gdacs.org) disaster alerts (© European Union, CC BY 4.0);
 [USGS](https://earthquake.usgs.gov) earthquake feed;
-[CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog);
-[WHO Disease Outbreak News](https://www.who.int/emergencies/disease-outbreak-news).
+[CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+and [cybersecurity advisories](https://www.cisa.gov/news-events/cybersecurity-advisories);
+[WHO Disease Outbreak News](https://www.who.int/emergencies/disease-outbreak-news);
+[CDC travel health notices](https://wwwnc.cdc.gov/travel/notices);
+[INFORM Severity Index](https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Severity)
+(INFORM, a collaboration of the IASC Reference Group on Risk, Early Warning and
+Preparedness and the European Commission; CC BY 4.0).
 Headlines belong to their publishers and are shown with their source.
 
 ## Troubleshooting

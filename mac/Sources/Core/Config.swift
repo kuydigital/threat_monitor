@@ -8,11 +8,11 @@
 import Foundation
 
 enum TM {
-    static let version = "3.4"
+    static let version = "4.0"
     static let syncDeadline: Double = 45          // a whole sync never takes longer
     static let requestTimeout: Double = 15        // seconds to wait for data, per request
     static let clockCheckSecs: Double = 60
-    static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ThreatMonitor/3.4"
+    static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ThreatMonitor/4.0"
 
     static let refreshOK: Double = 900            // seconds between syncs when every source worked
     static let refreshRetryMin: Double = 60       // first retry after a failure; doubles up to refreshOK
@@ -31,7 +31,7 @@ enum TM {
     static let feedNormalFloor: Double = 0.15
     static let defaultNormal: [String: [String: Double]] = [
         "WAR": ["BBC": 0.55, "ALJAZEERA": 0.8, "NPR": 0.5],
-        "CYB": ["BBC": 0.3, "NPR": 0.2, "CISA": 0.3],
+        "CYB": ["BBC": 0.3, "NPR": 0.2],
         "BIO": ["BBC": 0.4, "NPR": 0.35, "WHO": 0.5],
     ]
 
@@ -42,8 +42,48 @@ enum TM {
     static let calibSettled = 24
     static let calibSampleGap: Double = 55 * 60
 
-    static let kevWeight = 0.05, kevCap = 1.0
     static let donWeight = 0.25, donCap = 1.0
+
+    // Official levels (v4.0): an authority's rating, moved by the news by at
+    // most pulseMax points. Without the authority: the news score alone.
+    static let pulseMax: Double = 15
+    static let pulseShare: Double = 1.0 / 3       // pulse = (news score - normalLevel) / 3
+    static let officialScale: Double = 20         // official points -> 0-100, the DIS curve
+
+    static let cdcNoticesURL = "https://wwwnc.cdc.gov/travel/rss/notices.xml"
+    static let cdcLevelPoints: [Int: Double] = [4: 15.0, 3: 6.0, 2: 1.0, 1: 0.25]
+    static let cdcRoutineCap: Double = 5          // Levels 1 and 2 together
+    static let pheicPoints: Double = 15
+    static let pheicRx = Rx(#"public health emergency of international concern|\bPHEIC\b"#, ci: true)
+    static let pheicEndedRx = Rx(#"\b(no longer|ended|end of|terminat\w+|lifted)\b[^.]{0,80}(public health emergency of international concern|\bPHEIC\b)"#, ci: true)
+
+    static let cisaAdvisoriesURL = "https://www.cisa.gov/cybersecurity-advisories/cybersecurity-advisories.xml"
+    static let advisoryWindowDays: Double = 14
+    static let kevPoints = 1.0, kevRansomwarePoints = 1.0
+    static let advisoryPoints: Double = 4
+
+    static let informPage = "https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Severity/Results-and-data"
+    static let informRefreshDays: Double = 3
+    // The INFORM site answers a "Macintosh" user agent with a bot check instead of the page.
+    static let informUserAgent = "Mozilla/5.0 (compatible; ThreatMonitor/4.0)"
+    static let informTimeout: Double = 60          // the server is slow: own session, own thread
+    static let informMaxAgeDays = 75
+    static let informRetryHours: Double = 6
+    /// Very High conflict crises in every INFORM Severity release (threat_monitor.py INFORM_HISTORY).
+    static let informHistory: [String: Double] = [
+        "2020-09": 12, "2020-10": 11, "2020-11": 12, "2020-12": 11, "2021-01": 10, "2021-02": 10,
+        "2021-03": 14, "2021-04": 13, "2021-05": 13, "2021-06": 15, "2021-07": 16, "2021-08": 16,
+        "2021-09": 17, "2021-10": 17, "2021-11": 16, "2021-12": 17, "2022-01": 17, "2022-02": 17,
+        "2022-03": 15, "2022-04": 16, "2022-05": 15, "2022-06": 16, "2022-07": 15, "2022-08": 16,
+        "2022-09": 17, "2022-10": 17, "2022-11": 17, "2022-12": 17, "2023-01": 17, "2023-02": 17,
+        "2023-03": 18, "2023-04": 18, "2023-05": 18, "2023-06": 18, "2023-07": 16, "2023-08": 17,
+        "2023-09": 17, "2023-10": 17, "2023-11": 17, "2023-12": 17, "2024-01": 18, "2024-02": 18,
+        "2024-03": 18, "2024-04": 15, "2024-05": 16, "2024-06": 16, "2024-07": 17, "2024-08": 19,
+        "2024-09": 19, "2024-10": 19, "2024-11": 18, "2024-12": 17, "2025-01": 19, "2025-02": 19,
+        "2025-03": 18, "2025-04": 17, "2025-05": 18, "2025-06": 17, "2025-07": 17, "2025-08": 17,
+        "2025-09": 17, "2025-11": 14, "2025-12": 14, "2026-01": 14, "2026-02": 16, "2026-03": 17,
+        "2026-04": 17, "2026-05": 17, "2026-06": 20, "2026-07": 21, "2026-09": 21,
+    ]
 
     static let disRoutineMax = 1.0
     static let disRoutineCap = 5.0
@@ -51,7 +91,7 @@ enum TM {
 
     static let googleNews = "https://news.google.com/rss/search"
     static let googleParams: [(String, String)] = [("hl", "en-US"), ("gl", "US"), ("ceid", "US:en")]
-    static let whoDonURL = "https://www.who.int/api/news/diseaseoutbreaknews?$orderby=PublicationDate%20desc&$top=20&$select=Title,PublicationDate,DonId"
+    static let whoDonURL = "https://www.who.int/api/news/diseaseoutbreaknews?$orderby=PublicationDate%20desc&$top=20&$select=Title,PublicationDate,DonId,Summary,FurtherInformation"
     static let cisaKevURL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     static let gdacsURL = "https://www.gdacs.org/xml/rss.xml"
     static let usgsURL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson"
@@ -243,17 +283,17 @@ enum Config {
 
     static let categories: [String: Category] = [
         "WAR": Category("WAR", feeds: warFeeds, rules: warRules, exclude: warExclude, offtopic: warOfftopic),
-        "CYB": Category("CYB", feeds: cybFeeds, extra: "CISA", rules: cybRules, exclude: cybExclude),
+        "CYB": Category("CYB", feeds: cybFeeds, rules: cybRules, exclude: cybExclude),
         "BIO": Category("BIO", feeds: bioFeeds, extra: "WHO", rules: bioRules, exclude: bioExclude),
     ]
 
-    /// Weight per item and cap of the official extra sources.
+    /// Weight per item and cap of the extra news source (WHO outbreak notices).
     static func extraWeight(_ name: String) -> (weight: Double, cap: Double) {
-        name == "CISA" ? (TM.kevWeight, TM.kevCap) : (TM.donWeight, TM.donCap)
+        (TM.donWeight, TM.donCap)
     }
 
     static func extraURL(_ name: String) -> String {
-        name == "CISA" ? TM.cisaKevURL : TM.whoDonURL
+        TM.whoDonURL
     }
 
     /// Calibration keys, e.g. "WAR:BBC" (scored feeds and extra sources).

@@ -47,6 +47,9 @@ enum Sources {
             for f in cfg.feeds { out.append(Job(key: "\(name):\(f.key)", url: f.url)) }
             if let e = cfg.extra { out.append(Job(key: "\(name):\(e)", url: URL(string: Config.extraURL(e)))) }
         }
+        out.append(Job(key: "CYB:CISA", url: URL(string: TM.cisaKevURL)))
+        out.append(Job(key: "CYB:ADVISORIES", url: URL(string: TM.cisaAdvisoriesURL)))
+        out.append(Job(key: "BIO:CDC", url: URL(string: TM.cdcNoticesURL)))
         out.append(Job(key: "DIS:GDACS", url: URL(string: TM.gdacsURL)))
         out.append(Job(key: "DIS:USGS", url: URL(string: TM.usgsURL)))
         return out
@@ -143,6 +146,7 @@ final class Engine {
     var calibURL: URL { dataDir.appendingPathComponent("threat_calibration.json") }
     var stateURL: URL { dataDir.appendingPathComponent("threat_state.json") }
     var logURL: URL { dataDir.appendingPathComponent("screensaver.log") }
+    var informURL: URL { dataDir.appendingPathComponent("inform_cache.json") }
 
     private let lock = NSLock()
     private var cats: [String: CatSlot] = [:]
@@ -162,7 +166,7 @@ final class Engine {
     private let queue = DispatchQueue(label: "com.kuydigital.ThreatMonitor.engine", qos: .utility)
     private var timer: DispatchSourceTimer?
     private var clockOffset: Double = 0
-    private let scorer = Scorer(calibration: .empty())
+    private lazy var scorer = Scorer(calibration: .empty(), inform: InformStore(file: informURL))
     private lazy var session: URLSession = Sources.makeSession()
 
     init(dataDir: URL? = nil) {
@@ -202,6 +206,7 @@ final class Engine {
         Log.shared.configure(file: logURL, echo: false)
         tmLog("INFO", "Threat Monitor \(TM.version) screensaver starting (data folder \(dataDir.path))")
         scorer.calibration = Calibration.load(from: calibURL)
+        scorer.inform.onNewResult = { [weak self] in self?.syncSoon() }
         lock.lock()
         let isDemo = demo
         baseline = scorer.calibration.baselineHours()
@@ -230,6 +235,13 @@ final class Engine {
             due = true
         }
         if due { syncNow() }
+    }
+
+    /// Sync at the next tick (a new INFORM release has been read).
+    func syncSoon() {
+        lock.lock()
+        nextDue = min(nextDue, monotonicNow())
+        lock.unlock()
     }
 
     /// Download and score everything once (runs on the engine's queue, or
@@ -451,7 +463,7 @@ final class Rotator {
 }
 
 /// Fetch every source once and explain each score (like threat_monitor.py
-/// --check). Changes nothing on disk.
+/// --check). Changes nothing on disk except the INFORM cache.
 enum CheckReport {
     static func run() -> String {
         var out: [String] = []
@@ -461,7 +473,7 @@ enum CheckReport {
         fmt.timeZone = Dates.utc
         fmt.dateFormat = "yyyy-MM-dd HH:mm"
         let engine = Engine()
-        let scorer = Scorer(calibration: Calibration.load(from: engine.calibURL))
+        let scorer = Scorer(calibration: Calibration.load(from: engine.calibURL), inform: InformStore(file: engine.informURL))
         out.append("Threat Monitor \(TM.version) (macOS) source check - clock \(fmt.string(from: now)) UTC")
         out.append("Data folder: \(engine.dataDir.path)   learned history: \(scorer.calibration.baselineHours()) h")
         out.append("Fetching all sources (up to \(Int(TM.syncDeadline)) s)...\n")
@@ -469,16 +481,34 @@ enum CheckReport {
         let fetched = Sources.fetchAll(session: Sources.makeSession(), timeout: TM.syncDeadline)
         func pad(_ s: String, _ n: Int) -> String { s.count >= n ? s : s + String(repeating: " ", count: n - s.count) }
         func rpad(_ s: String, _ n: Int) -> String { s.count >= n ? s : String(repeating: " ", count: n - s.count) + s }
+        _ = scorer.inform.war(now: now)                   // first run: give INFORM time to arrive
+        let informWait = monotonicNow() + 90
+        while scorer.inform.isBusy && monotonicNow() < informWait { Thread.sleep(forTimeInterval: 1) }
         for name in TM.newsCats {
-            let r = scorer.category(name, now: now, fetched: fetched)
-            var comps = r.comps
+            var comps: [Component] = []
+            var stories: [Story] = []
             var result: String
+            var detail = ""
             do {
-                result = "\(Score.fromRatio(try scorer.combine(name, &comps)))"
+                let r = try scorer.scoreCategory(name, now: now, fetched: fetched, refresh: false)
+                comps = r.comps
+                stories = r.stories
+                detail = r.info.detail
+                if r.info.official == nil {
+                    result = "\(r.value)  (news only: official level unavailable)"
+                } else if let n = r.info.news, let o = r.info.official {
+                    result = "\(r.value)  = official \(o) \(String(format: "%+.0f", r.info.pulse)) news pulse (news \(n))"
+                } else {
+                    result = "\(r.value)  (official only: no news feed worked)"
+                }
             } catch {
+                let r = scorer.category(name, now: now, fetched: fetched)
+                comps = r.comps
+                stories = r.stories
                 result = "--  (\(error))"
             }
             out.append("\(name)  ->  \(result)")
+            if !detail.isEmpty { out.append("   \(pad("Official", 12)) \(detail)") }
             for c in comps {
                 if c.kind == "headlines" {
                     out.append("   \(pad(c.label, 12)) " + (c.note.isEmpty ? "\(c.hits) matching headlines (shown on screen, not scored)" : c.note))
@@ -492,7 +522,7 @@ enum CheckReport {
                     out.append(line)
                 }
             }
-            for h in Score.pickHeadlines(r.stories) {
+            for h in Score.pickHeadlines(stories) {
                 out.append("      - \(String(h.title.prefix(100)))  [\(h.source)]")
             }
             out.append("")

@@ -130,6 +130,12 @@ checkPattern("filler", Text.fillerRx, cp["filler"])
 checkPattern("clause", Text.clauseRx, cp["clause"])
 checkPattern("dash", Text.dashRx, cp["dash"])
 checkPattern("cut", Text.cutRx, cp["cut"])
+let op = obj(golden["official_patterns"])
+checkPattern("pheic", TM.pheicRx, op["pheic"])
+checkPattern("pheic_ended", TM.pheicEndedRx, op["pheic_ended"])
+checkPattern("cdc_title", Parse.cdcTitleRx, op["cdc_title"])
+checkPattern("inform_link", Inform.linkRx, op["inform_link"])
+checkPattern("inform_conflict", Inform.conflictRx, op["inform_conflict"])
 let tails = arr(cp["tails"])
 expect("patterns", tails.count == Text.tailRxs.count, "tail pattern count")
 for (i, t) in tails.enumerated() where i < Text.tailRxs.count { checkPattern("tail \(i)", Text.tailRxs[i], t) }
@@ -176,7 +182,7 @@ let swiftConstants: [String: Any] = [
     "MIN_FEED_STORIES": TM.minFeedStories, "FEED_MIN_DENOMINATOR": TM.feedMinDenominator,
     "FEED_NORMAL_FLOOR": TM.feedNormalFloor, "STATE_MAX_AGE": TM.stateMaxAge, "CALIB_VERSION": TM.calibVersion,
     "CALIB_DAYS": TM.calibDays, "CALIB_MIN_SAMPLES": TM.calibMinSamples, "CALIB_SETTLED": TM.calibSettled,
-    "CALIB_SAMPLE_GAP": TM.calibSampleGap, "KEV_WEIGHT": TM.kevWeight, "KEV_CAP": TM.kevCap,
+    "CALIB_SAMPLE_GAP": TM.calibSampleGap,
     "DON_WEIGHT": TM.donWeight, "DON_CAP": TM.donCap, "DIS_ROUTINE_MAX": TM.disRoutineMax,
     "DIS_ROUTINE_CAP": TM.disRoutineCap, "DIS_SCALE": TM.disScale, "MAIN_SECS": TM.mainSecs,
     "CAT_SECS": TM.catSecs, "FADE_SECS": TM.fadeSecs, "HEADLINE_MAX_LINES": TM.headlineMaxLines,
@@ -186,6 +192,13 @@ let swiftConstants: [String: Any] = [
     "CAT_NAMES": TM.catNames, "EMPTY_MSG": TM.emptyMsg, "MMI_WORDS": Text.mmiWords, "CATS": TM.cats,
     "HEADLINE_SIZE": TM.headlineSize, "HEADLINE_AREA": [TM.headlineArea.top, TM.headlineArea.bottom],
     "DANGLING": Array(Text.dangling).sorted(), "COMPONENT_KEYS": Config.componentKeys.sorted(),
+    "PULSE_MAX": TM.pulseMax, "PULSE_SHARE": TM.pulseShare, "OFFICIAL_SCALE": TM.officialScale,
+    "CDC_NOTICES_URL": TM.cdcNoticesURL, "CDC_ROUTINE_CAP": TM.cdcRoutineCap, "PHEIC_POINTS": TM.pheicPoints,
+    "CDC_LEVEL_POINTS": Dictionary(uniqueKeysWithValues: TM.cdcLevelPoints.map { (String($0.key), $0.value) }),
+    "CISA_ADVISORIES_URL": TM.cisaAdvisoriesURL, "ADVISORY_WINDOW_DAYS": TM.advisoryWindowDays,
+    "KEV_POINTS": TM.kevPoints, "KEV_RANSOMWARE_POINTS": TM.kevRansomwarePoints, "ADVISORY_POINTS": TM.advisoryPoints,
+    "INFORM_PAGE": TM.informPage, "INFORM_REFRESH_DAYS": TM.informRefreshDays, "INFORM_MAX_AGE_DAYS": TM.informMaxAgeDays,
+    "INFORM_RETRY_HOURS": TM.informRetryHours, "INFORM_HISTORY": TM.informHistory, "INFORM_TIMEOUT": TM.informTimeout,
 ]
 var gc = obj(golden["constants"])
 if let levels = gc["LEVELS"] as? [Any] {                 // colours are checked by the screenshots
@@ -211,6 +224,24 @@ for r in arr(golden["saturate"]) {
     let row = arr(r)
     guard row.count == 3, let raw = num(row[0]), let scale = num(row[1]), let ref = intOrNil(row[2]) else { continue }
     expect("numbers", Score.saturate(raw, scale) == ref, "saturate(\(raw), \(scale))")
+}
+for r in arr(golden["war_scores"]) {
+    let row = arr(r)
+    guard row.count == 2, let p = num(row[0]), let ref = intOrNil(row[1]) else { continue }
+    expect("numbers", Official.warScore(p) == ref, "war_score_from_points(\(p)) = \(Official.warScore(p)), Python \(ref)")
+}
+for r in arr(golden["pulse"]) {
+    let row = arr(r)
+    guard row.count == 4, let o = intOrNil(row[0]), let n = intOrNil(row[1]) else { continue }
+    let mine = Official.withPulse(o, n)
+    expect("numbers", mine.value == intOrNil(row[2]) && close(mine.pulse, num(row[3])),
+           "with_pulse(\(o), \(n)) = \(mine), Python \(row[2]), \(row[3])")
+}
+for r in arr(golden["inform_age"]) {
+    let row = arr(r)
+    guard row.count == 2, let rel = str(row[0]) else { continue }
+    let mine = Inform.ageDays(rel, now: now)
+    expect("numbers", mine == intOrNil(row[1]), "inform_release_age_days(\(q(rel))) = \(String(describing: mine)), Python \(row[1])")
 }
 for c in arr(golden["gti"]) {
     let o = obj(c)
@@ -315,9 +346,25 @@ for (key, ref) in obj(golden["items"]) {
 }
 for (key, ref) in obj(golden["stories"]) {
     guard case .ok(let data)? = fetched[key] else { continue }
+    if key == "BIO:CDC" {
+        do {
+            let mine = try Parse.cdc(data, now: now)
+            let refN = arr(ref).map { obj($0) }
+            expect("parse", mine.count == refN.count, "\(key): \(mine.count) notices, Python \(refN.count)")
+            for (a, b) in zip(mine, refN) {
+                expect("parse", a.level == intOrNil(b["level"]) && a.title == str(b["title"])
+                        && close(a.date.timeIntervalSince1970, num(b["date"]), 1),
+                       "\(key): Level \(a.level) \(q(a.title)) vs Python \(b)")
+            }
+        } catch {
+            expect("parse", false, "\(key): could not read (\(error)); Python could")
+        }
+        continue
+    }
     do {
         let mine: [Story]
         switch key {
+        case "CYB:ADVISORIES": mine = try Parse.advisories(data, now: now)
         case "CYB:CISA": mine = try Parse.kev(data, now: now)
         case "BIO:WHO": mine = try Parse.who(data, now: now)
         case "DIS:GDACS": mine = try Parse.gdacs(data, now: now)
@@ -327,7 +374,8 @@ for (key, ref) in obj(golden["stories"]) {
         expect("parse", mine.count == refStories.count, "\(key): \(mine.count) items, Python \(refStories.count)")
         for (a, b) in zip(mine, refStories) {
             expect("parse", a.title == str(b["title"]) && close(a.sev, num(b["sev"])) && a.source == str(b["source"])
-                    && close(a.date?.timeIntervalSince1970, num(b["date"]), 1),
+                    && close(a.date?.timeIntervalSince1970, num(b["date"]), 1)
+                    && a.pheic == (b["pheic"] as? Bool),
                    "\(key): \(q(a.title)) sev \(a.sev) vs Python \(q(str(b["title"]))) sev \(num(b["sev"]) ?? -1)")
         }
     } catch {
@@ -339,6 +387,8 @@ for (key, err) in obj(golden["parse_errors"]) {
         let failed: Bool
         switch key {
         case "CYB:CISA": failed = (try? Parse.kev(data, now: now)) == nil
+        case "CYB:ADVISORIES": failed = (try? Parse.advisories(data, now: now)) == nil
+        case "BIO:CDC": failed = (try? Parse.cdc(data, now: now)) == nil
         case "BIO:WHO": failed = (try? Parse.who(data, now: now)) == nil
         case "DIS:GDACS": failed = (try? Parse.gdacs(data, now: now)) == nil
         case "DIS:USGS": failed = (try? Parse.usgs(data)) == nil
@@ -348,10 +398,50 @@ for (key, err) in obj(golden["parse_errors"]) {
     }
 }
 
+// ---- 6b. INFORM Severity workbook and page -----------------------------------------------------------
+let gi = obj(golden["inform"])
+let fixtures = folder.appendingPathComponent("fixtures")
+if let page = try? Data(contentsOf: fixtures.appendingPathComponent("INFORM_page.html")) {
+    let mine = Inform.links(String(decoding: page, as: UTF8.self)).map { $0.absoluteString }
+    let ref = arr(gi["links"]).compactMap { $0 as? String }
+    expect("inform", mine == ref, "INFORM links:\n    swift  \(mine)\n    python \(ref)")
+} else {
+    expect("inform", false, "INFORM page not saved: \(str(gi["error"]) ?? "")")
+}
+if let book = try? Data(contentsOf: fixtures.appendingPathComponent("INFORM.xlsx")) {
+    do {
+        let rows = try Inform.rows(book, sheet: "all crises")
+        let ref = arr(gi["rows"]).map { arr($0) }
+        expect("inform", rows.count == ref.count, "INFORM sheet: \(rows.count) rows, Python \(ref.count)")
+        var bad = 0
+        for (i, (a, b)) in zip(rows, ref).enumerated() {
+            let mine: [Any] = a.map { $0.map { $0 as Any } ?? NSNull() }
+            if !same(mine, b) {
+                bad += 1
+                if bad <= 3 { expect("inform", false, "INFORM row \(i): swift \(a.prefix(8)) python \(b.prefix(8))") }
+            }
+        }
+        expect("inform", bad == 0, "\(bad) INFORM rows differ")
+        let p = try Inform.points(rows)
+        expect("inform", p.release == str(gi["release"]) && close(p.points, num(gi["points"])),
+               "INFORM points \(p), Python \(String(describing: gi["release"])) \(String(describing: gi["points"]))")
+    } catch {
+        expect("inform", false, "INFORM workbook: \(error); Python read it")
+    }
+} else {
+    expect("inform", false, "INFORM workbook not saved: \(str(gi["error"]) ?? "")")
+}
+expect("inform", (try? Inform.rows(Data("not a zip".utf8), sheet: "all crises")) == nil, "a broken workbook is refused")
+
 // ---- 7. the whole pipeline -------------------------------------------------------------------------
 let pipeline = obj(golden["pipeline"])
-let scorer = Scorer(calibration: .empty())
-let result = scorer.process(now: now, fetched: fetched, record: false)
+let informFile = FileManager.default.temporaryDirectory.appendingPathComponent("tm-inform-\(UUID().uuidString).json")
+if let p = num(gi["points"]), let rel = str(gi["release"]) {
+    InformStore(file: informFile).store(InformCache(url: str(gi["file"]) ?? "", release: rel, points: p, checked: num(golden["now"])))
+}
+let scorer = Scorer(calibration: .empty(), inform: InformStore(file: informFile))
+let result = scorer.process(now: now, fetched: fetched, record: false, refreshOfficial: false)
+try? FileManager.default.removeItem(at: informFile)
 var myScores: [String: Int] = [:]
 var report: [String] = []
 for c in TM.cats {
@@ -364,6 +454,11 @@ for c in TM.cats {
     let refHeadlines = arr(ref["headlines"]).compactMap { $0 as? String }
     expect("pipeline", myHeadlines == refHeadlines, "\(c) headlines:\n    swift  \(myHeadlines)\n    python \(refHeadlines)")
     if c == "DIS" { continue }
+    let info = result.infos[c]
+    expect("pipeline", info?.news == intOrNil(ref["news"]) && info?.official == intOrNil(ref["official"])
+            && close(info.map { $0.official == nil ? 0 : $0.pulse }, num(ref["pulse"]) ?? (ref["official"] is NSNull ? 0 : nil))
+            && (info?.detail ?? "") == (str(ref["detail"]) ?? ""),
+           "\(c): swift news \(String(describing: info?.news)) official \(String(describing: info?.official)) pulse \(String(describing: info?.pulse)) \(q(info?.detail)); python \(ref["news"] ?? "") \(ref["official"] ?? "") \(ref["pulse"] ?? "") \(q(str(ref["detail"])))")
     let comps = result.comps[c] ?? []
     let refComps = arr(ref["components"]).map { obj($0) }
     expect("pipeline", comps.count == refComps.count, "\(c): \(comps.count) components, Python \(refComps.count)")
