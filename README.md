@@ -14,6 +14,7 @@ any desktop.
 ![Threat Monitor screens (sample data)](docs/screens.png)
 
 [![Watch the Threat Monitor live on YouTube, 24/7](https://img.shields.io/badge/YouTube-Watch%20live%2024%2F7-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy69yovgkXPAzZ92min4p_g/live)
+[![Buy me a coffee with PayPal](https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-003087?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/thekuys)
 
 ## Download
 
